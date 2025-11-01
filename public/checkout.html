@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checkout - Regal Pet Portraits</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/env.js"></script>
+    <style>
+      .checkout-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      
+      .checkout-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+      
+      .checkout-form {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: 0 4px 14px rgba(17,24,39,0.06);
+      }
+      
+      .form-section {
+        margin-bottom: 32px;
+      }
+      
+      .form-section h3 {
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+      }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #374151;
+      }
+      
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 16px;
+        background: var(--surface);
+      }
+      
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+      }
+      
+      .pricing-options {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .pricing-option {
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+      
+      .pricing-option:hover {
+        border-color: var(--accent);
+        background: #faf9ff;
+      }
+      
+      .pricing-option.selected {
+        border-color: var(--accent);
+        background: #faf9ff;
+      }
+      
+      .pricing-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .option-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      
+      .option-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+      }
+      
+      .option-price {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      
+      .option-description {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      
+      .option-features {
+        margin-top: 12px;
+        list-style: none;
+        padding: 0;
+      }
+      
+      .option-features li {
+        color: #374151;
+        margin-bottom: 4px;
+        padding-left: 20px;
+        position: relative;
+      }
+      
+      .option-features li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #16a34a;
+        font-weight: bold;
+      }
+      
+      .total-section {
+        background: #f9fafb;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      
+      .total-row.final {
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+        margin-top: 12px;
+        font-weight: 700;
+        font-size: 18px;
+      }
+      
+      .checkout-btn {
+        width: 100%;
+        padding: 16px;
+        font-size: 18px;
+        font-weight: 700;
+        border: none;
+        border-radius: 12px;
+        background: var(--accent);
+        color: white;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .checkout-btn:hover:not(:disabled) {
+        background: var(--accent-dark);
+      }
+      
+      .checkout-btn:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      
+      .loading {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid transparent;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      .error-message {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+      }
+      
+      .test-data {
+        background: #fffbeb;
+        border: 1px solid #fed7aa;
+        color: #92400e;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        font-size: 14px;
+      }
+      
+      .test-data strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+<header class="topbar">
+<div class="brand"><img class="brand-logo" src="/images/Hero4.png" alt="Regal Pet Portraits logo"/></div>
+      <nav class="nav">
+        <a href="/" data-route>Home</a>
+        <a href="/styles" data-route>Styles</a>
+        <a href="/faqs" data-route>FAQs</a>
+        <a href="/photo-guide" data-route>Photo Guide</a>
+        <a href="/contact" data-route>Contact</a>
+      </nav>
+    </header>
+
+    <div class="checkout-container">
+      <div class="checkout-header">
+        <h1>Complete Your Order</h1>
+        <p>Choose your portrait package and complete your payment</p>
+      </div>
+
+      <div class="test-data">
+        <strong>🧪 Test Mode</strong>
+        This is a test checkout page. Use the form below to test the new Stripe Checkout Session endpoint.
+      </div>
+
+      <form id="checkoutForm" class="checkout-form">
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="form-section">
+          <h3>Order Details</h3>
+          <div class="form-group">
+            <label for="userEmail">Email Address</label>
+            <input type="email" id="userEmail" name="userEmail" placeholder="your@email.com" />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Choose Your Package</h3>
+          <div class="pricing-options">
+            <label class="pricing-option selected" for="standard">
+              <input type="radio" id="standard" name="package" value="standard" checked />
+              <div class="option-header">
+                <div class="option-title">Standard Portrait</div>
+                <div class="option-price">$9.99</div>
+              </div>
+              <div class="option-description">
+                High-quality digital portrait of your pet in your chosen style
+              </div>
+              <ul class="option-features">
+                <li>1024x1024 resolution</li>
+                <li>Digital download</li>
+                <li>Perfect for social media</li>
+                <li>Ready in 24-48 hours</li>
+              </ul>
+            </label>
+
+            <label class="pricing-option" for="upscale">
+              <input type="radio" id="upscale" name="package" value="upscale" />
+              <div class="option-header">
+                <div class="option-title">Premium Portrait + Upscale</div>
+                <div class="option-price">$14.98</div>
+              </div>
+              <div class="option-description">
+                Everything in Standard plus high-resolution upscaling for printing
+              </div>
+              <ul class="option-features">
+                <li>1024x1024 base resolution</li>
+                <li>4x upscaled to 4096x4096</li>
+                <li>Perfect for large prints</li>
+                <li>Print-ready quality</li>
+                <li>Ready in 24-48 hours</li>
+              </ul>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Test Data (Auto-filled)</h3>
+          <div class="form-group">
+            <label for="userId">User ID</label>
+            <input type="text" id="userId" name="userId" value="test-user-123" readonly />
+          </div>
+          <div class="form-group">
+            <label for="jobId">Job ID</label>
+            <input type="text" id="jobId" name="jobId" value="test-job-456" readonly />
+          </div>
+          <div class="form-group">
+            <label for="styleId">Style ID</label>
+            <input type="text" id="styleId" name="styleId" value="test-style-789" readonly />
+          </div>
+          <div class="form-group">
+            <label for="styleName">Style Name</label>
+            <input type="text" id="styleName" name="styleName" value="test-style.png" readonly />
+          </div>
+          <div class="form-group">
+            <label for="petFile">Pet File</label>
+            <input type="text" id="petFile" name="petFile" value="" readonly />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>🧪 Test Displays</h3>
+          <div class="form-group">
+            <label for="petFileDisplay">Pet File Value Being Passed to Stripe</label>
+            <input type="text" id="petFileDisplay" name="petFileDisplay" value="" readonly style="background-color: #f0f8ff; border: 2px solid #4CAF50; font-weight: bold;" />
+            <small style="color: #666; margin-top: 4px; display: block;">Format: uuid/job_id/filename</small>
+          </div>
+          <div class="form-group">
+            <label for="wantUpscale">want_upscale (true/false)</label>
+            <input type="text" id="wantUpscale" name="want_upscale" value="false" readonly style="background-color: #fff7ed; border: 2px solid #f59e0b; font-weight: bold;" />
+            <small style="color: #666; margin-top: 4px; display: block;">Reflects your package selection above.</small>
+          </div>
+        </div>
+
+        <div class="total-section">
+          <div class="total-row">
+            <span>Standard Portrait</span>
+            <span id="basePrice">$9.99</span>
+          </div>
+          <div class="total-row" id="upscaleRow" style="display: none;">
+            <span>Upscale Add-on</span>
+            <span>$4.99</span>
+          </div>
+          <div class="total-row final">
+            <span>Total</span>
+            <span id="totalPrice">$9.99</span>
+          </div>
+        </div>
+
+        <button type="submit" id="checkoutBtn" class="checkout-btn">
+          <span id="btnText">Proceed to Payment</span>
+        </button>
+      </form>
+    </div>
+
+    <script>
+      // Determine API base: use same-origin for local and prod
+      const apiBase = '';
+
+      // Pre-fill live metadata from session or API
+      document.addEventListener('DOMContentLoaded', async () => {
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        // Fetch user info (include credentials for auth cookie)
+        try {
+          const meRes = await fetch(`${apiBase}/api/auth/me`, { credentials: 'include' });
+          const meCt = meRes.headers.get('content-type') || '';
+          const me = meCt.includes('application/json') ? await meRes.json() : { logged_in: false };
+          if (me.logged_in && me.user) {
+            setVal('userId', me.user.id || '');
+            const emailEl = document.getElementById('userEmail');
+            if (emailEl && me.user.email) emailEl.value = me.user.email;
+            console.log('Authenticated user detected:', me.user.id);
+          } else {
+            console.warn('User not logged in; user_id will be empty until login.');
+          }
+        } catch (err) { console.warn('me fetch failed', err); }
+
+        let styleId = sessionStorage.getItem('styleId') || '';
+        let styleName = sessionStorage.getItem('styleTitle') || '';
+        let styleFilename = sessionStorage.getItem('styleFilename') || '';
+        let jobId = sessionStorage.getItem('jobId') || '';
+        let petFile = sessionStorage.getItem('petFile') || '';
+
+        // Pull latest job and extract pet_file (requires auth cookie)
+        try {
+          const resp = await fetch(`${apiBase}/api/jobs`, { credentials: 'include' });
+          const data = await resp.json();
+          if (resp.ok && data.data && data.data.length > 0) {
+            const latest = data.data[0];
+            // Update identifiers if missing
+            if (!jobId) { jobId = latest.id; sessionStorage.setItem('jobId', jobId); }
+            if (!styleId && latest.style_id) { styleId = latest.style_id; sessionStorage.setItem('styleId', styleId); }
+            if (!styleName && latest.style_title) { styleName = latest.style_title; sessionStorage.setItem('styleTitle', styleName); }
+            
+            // Extract pet_file from S3 key
+            const key = latest.upload_s3_key || latest.composite_s3_key || '';
+            if (key) {
+              const parts = key.split('/');
+              const idx = parts[0] === 'uploads' ? 1 : 0;
+              const userIdFromKey = parts[idx];
+              const jobIdFromKey = parts[idx + 1];
+              const filename = parts.slice(idx + 2).join('/');
+              if (userIdFromKey && jobIdFromKey && filename) {
+                petFile = `uploads/${userIdFromKey}/${jobIdFromKey}/${filename}`;
+                console.log('Extracted pet_file:', petFile);
+              }
+            }
+          }
+        } catch (err) { console.warn('jobs fetch failed', err); }
+
+        // Resolve original filename for style_name
+        if (!styleFilename && styleId) {
+          try {
+            const stylesRes = await fetch(`${apiBase}/api/styles`, { credentials: 'include' });
+            const stylesData = await stylesRes.json();
+            const match = (stylesData.data || []).find(s => String(s.id) === String(styleId));
+            if (match && match.original_filename) {
+              styleFilename = match.original_filename;
+              sessionStorage.setItem('styleFilename', styleFilename);
+            }
+          } catch (err) { console.warn('styles fetch failed', err); }
+        }
+
+        setVal('jobId', jobId);
+        setVal('styleId', styleId);
+        setVal('styleName', styleFilename || styleName);
+        setVal('petFile', petFile);
+        setVal('petFileDisplay', petFile); // Update test display textbox
+        const selected = document.querySelector('input[name="package"]:checked');
+        setVal('wantUpscale', (selected && selected.value === 'upscale') ? 'true' : 'false');
+      });
+
+      // Handle package selection
+      const packageOptions = document.querySelectorAll('input[name="package"]');
+      const pricingOptions = document.querySelectorAll('.pricing-option');
+      const upscaleRow = document.getElementById('upscaleRow');
+      const totalPrice = document.getElementById('totalPrice');
+
+      packageOptions.forEach(option => {
+        option.addEventListener('change', function() {
+          // Update visual selection
+          pricingOptions.forEach(opt => opt.classList.remove('selected'));
+          this.closest('.pricing-option').classList.add('selected');
+          
+          // Update pricing display
+          if (this.value === 'upscale') {
+            upscaleRow.style.display = 'flex';
+            totalPrice.textContent = '$14.98';
+          } else {
+            upscaleRow.style.display = 'none';
+            totalPrice.textContent = '$9.99';
+          }
+
+          // Update test textbox for want_upscale
+          const wantUpscaleInput = document.getElementById('wantUpscale');
+          if (wantUpscaleInput) {
+            wantUpscaleInput.value = (this.value === 'upscale') ? 'true' : 'false';
+          }
+        });
+      });
+
+      // Handle form submission
+      document.getElementById('checkoutForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('checkoutBtn');
+        const btnText = document.getElementById('btnText');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // Clear previous errors
+        errorMessage.style.display = 'none';
+        
+        // Show loading state
+        btn.disabled = true;
+        btnText.innerHTML = '<div class="loading"><div class="spinner"></div>Processing...</div>';
+        
+        try {
+          const formData = new FormData(this);
+          const selectedPackage = formData.get('package');
+          const wantUpscale = selectedPackage === 'upscale';
+          
+          const requestData = {
+            user_id: formData.get('userId'),
+            job_id: formData.get('jobId'),
+            style_id: formData.get('styleId'),
+            style_name: formData.get('styleName'),
+            pet_file: formData.get('petFile'),
+            customer_email: formData.get('userEmail') || undefined,
+            want_upscale: wantUpscale,
+            success_url: `${window.location.origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${window.location.origin}/upload`
+          };
+          
+          console.log('Creating checkout session with:', requestData);
+          
+          const response = await fetch(`${apiBase}/api/checkout/create_checkout_session`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(requestData)
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Failed to create checkout session');
+          }
+          
+          console.log('Checkout session created:', result);
+          
+          // Redirect to Stripe checkout
+          if (result.url) {
+            window.location.href = result.url;
+          } else {
+            throw new Error('No checkout URL received');
+          }
+          
+        } catch (error) {
+          console.error('Checkout error:', error);
+          errorMessage.textContent = error.message;
+          errorMessage.style.display = 'block';
+          
+          // Reset button
+          btn.disabled = false;
+          btnText.textContent = 'Proceed to Payment';
+        }
+      });
+
+      // Make pricing options clickable
+      pricingOptions.forEach(option => {
+        option.addEventListener('click', function() {
+          const radio = this.querySelector('input[type="radio"]');
+          radio.checked = true;
+          radio.dispatchEvent(new Event('change'));
+        });
+      });
+    </script>
+  </body>
+</html>

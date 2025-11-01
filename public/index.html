@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Regal Pet Portraits</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/env.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><img class="brand-logo" src="/images/pet_portraits_logo1.png" alt="Regal Pet Portraits logo"/></div>
+      <nav class="nav">
+        <a href="/styles" data-route>Styles</a>
+        <a href="/faqs" data-route>FAQs</a>
+        <a href="/photo-guide" data-route>Photo Guide</a>
+        <a href="/contact" data-route>Contact</a>
+        <span id="authNav">
+          <a href="/signin" data-route>Sign in</a>
+        </span>
+      </nav>
+    </header>
+    <div id="sessionStatus" class="session-status" style="display:none;"></div>
+    <main id="app" class="container"></main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

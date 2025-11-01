@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payment Successful - Regal Pet Portraits</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      .success-container {
+        max-width: 600px;
+        margin: 80px auto;
+        padding: 0 16px;
+        text-align: center;
+      }
+      
+      .success-icon {
+        width: 80px;
+        height: 80px;
+        background: #16a34a;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        color: white;
+        font-size: 40px;
+      }
+      
+      .success-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 40px;
+        box-shadow: 0 4px 14px rgba(17,24,39,0.06);
+      }
+      
+      .session-info {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 24px 0;
+        font-family: monospace;
+        font-size: 14px;
+        text-align: left;
+      }
+      
+      .session-info strong {
+        color: #0369a1;
+      }
+    </style>
+  </head>
+  <body>
+<header class="topbar">
+<div class="brand"><img class="brand-logo" src="/images/Hero4.png" alt="Regal Pet Portraits logo"/></div>
+      <nav class="nav">
+        <a href="/" data-route>Home</a>
+        <a href="/checkout.html" data-route>Test Checkout</a>
+      </nav>
+    </header>
+
+    <div class="success-container">
+      <div class="success-card">
+        <div class="success-icon">✓</div>
+        <h1>Payment Successful!</h1>
+        <p>Thank you for your order. Your pet portrait is being processed and will be ready soon.</p>
+        
+        <div id="sessionInfo" class="session-info">
+          <strong>Session Details:</strong><br>
+          <span id="sessionData">Loading session information...</span>
+        </div>
+        
+        <div style="margin-top: 32px;">
+          <a href="/checkout.html" class="btn primary">Test Another Checkout</a>
+          <a href="/" class="btn" style="margin-left: 12px;">Back to Home</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Extract session_id from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session_id');
+      
+      const sessionData = document.getElementById('sessionData');
+      
+      if (sessionId) {
+        sessionData.innerHTML = `
+          <strong>Session ID:</strong> ${sessionId}<br>
+          <strong>Status:</strong> Payment completed<br>
+          <strong>Timestamp:</strong> ${new Date().toLocaleString()}
+        `;
+      } else {
+        sessionData.innerHTML = `
+          <strong>Status:</strong> No session ID found in URL<br>
+          <strong>Note:</strong> This page should be accessed from a successful Stripe checkout
+        `;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Logs and OS files
+npm-debug.log*
+*.log
+.DS_Store
+
+# Build output
+dist/
+build/
+
+# Local secrets and credentials
+.env
+cookie.txt
+
+# Uploads and user-generated content
+public/uploads/
+
+# Misc
+.cache/
+.vscode/
