@@ -33,6 +33,8 @@ import directUploadHandler from "./api/uploads/direct.js";
 import signoutHandler from "./api/auth/signout.js";
 import jobViewRedirectHandler from "./api/jobs/view.js";
 import contactSendHandler from "./api/contact/send.js";
+import forgotPasswordHandler from "./api/auth/forgot-password.js";
+import resetPasswordHandler from "./api/auth/reset-password.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -116,6 +118,8 @@ app.get("/api/admin/users", (req, res) => adminUsersListHandler(req, res));
 app.delete("/api/admin/jobs/:id", (req, res) => adminJobDeleteHandler(req, res));
 app.post("/api/uploads/direct", express.raw({ type: '*/*', limit: '25mb' }), (req, res) => directUploadHandler(req, res));
 app.post("/api/contact/send", (req, res) => contactSendHandler(req, res));
+app.post("/api/auth/forgot-password", (req, res) => forgotPasswordHandler(req, res));
+app.post("/api/auth/reset-password", (req, res) => resetPasswordHandler(req, res));
 // front-end env script
 app.get("/env.js", (req, res) => {
   const base = process.env.API_BASE_URL || "https://www.regalpetportraits.com";
@@ -127,7 +131,7 @@ app.get("/env.js", (req, res) => {
 app.get("/api/ping", (req, res) => res.json({ ok: true }));
 
 // page routes (SPA): always serve index.html
-app.get(["/", "/signin", "/styles", "/upload", "/checkout", "/checkout/success", "/dashboard", "/faqs", "/photo-guide", "/contact", "/admin", "/admin/styles", "/admin/users", "/verify-email"], (req, res) => {
+app.get(["/", "/signin", "/reset-password", "/styles", "/upload", "/checkout", "/checkout/success", "/dashboard", "/faqs", "/photo-guide", "/contact", "/admin", "/admin/styles", "/admin/users", "/verify-email"], (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 

@@ -1,5 +1,5 @@
 import { Client } from "pg";
-import bcrypt from "bcryptjs";
+import { randomBytes, scryptSync } from "crypto";
 
 export default async function handler(req, res) {
   try {
@@ -43,8 +43,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "token_expired" });
       }
 
-      const hash = await bcrypt.hash(new_password, 10);
-      await pg.query(`UPDATE pet_portraits.users SET password_hash = $1 WHERE id = $2`, [hash, t.user_id]);
+      const salt = randomBytes(16).toString("hex");
+      const hash = scryptSync(new_password, salt, 64).toString("hex");
+      await pg.query(`UPDATE pet_portraits.users SET password_hash = $1, password_salt = $2 WHERE id = $3`, [hash, salt, t.user_id]);
       await pg.query(`UPDATE pet_portraits.password_reset_tokens SET used = TRUE WHERE token = $1`, [token]);
 
       await pg.end();
