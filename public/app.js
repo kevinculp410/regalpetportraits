@@ -252,6 +252,13 @@ function SignInPage() {
         <input id="loginPassword" type="password" placeholder="Password" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
         <button class="btn primary" type="submit" id="loginBtn">Sign In</button>
       </form>
+      <div style="margin-top:8px;">
+        <a href="#" id="forgotPasswordLink">Forgot password?</a>
+      </div>
+      <form id="forgotForm" class="grid" style="max-width:560px; display:none; margin-top:8px;">
+        <input id="forgotEmail" type="email" placeholder="you@example.com" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <button class="btn" type="submit" id="forgotSubmitBtn">Send reset link</button>
+      </form>
 
       <form id="createForm" class="grid" style="max-width:560px; display:none;">
         <input id="createName" type="text" placeholder="Your name" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
@@ -417,9 +424,25 @@ function VerifyEmailPage() {
   `;
 }
 
+function ResetPasswordPage() {
+  return `
+    <section class="container" style="max-width:720px;">
+      <h1>Reset Password</h1>
+      <p class="muted">Enter a new password for your account.</p>
+      <form id="resetForm" class="grid" style="max-width:560px;">
+        <input id="resetPassword" type="password" placeholder="New password (min 8 chars)" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <input id="resetPassword2" type="password" placeholder="Confirm new password" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <button class="btn primary" type="submit" id="resetSubmitBtn">Update Password</button>
+      </form>
+      <div id="resetStatus" class="pill" style="margin-top:10px; display:none;"></div>
+    </section>
+  `;
+}
+
 const routes = {
   "/": HomePage,
   "/signin": SignInPage,
+  "/reset-password": ResetPasswordPage,
   "/styles": StylesPage,
   "/upload": UploadPage,
   "/checkout": CheckoutPage,
@@ -747,6 +770,9 @@ const afterRender = {
     const tabs = document.querySelectorAll('.tab');
     const loginForm = document.getElementById('loginForm');
     const createForm = document.getElementById('createForm');
+    const forgotLink = document.getElementById('forgotPasswordLink');
+    const forgotForm = document.getElementById('forgotForm');
+    const forgotEmail = document.getElementById('forgotEmail');
 
     // Show any auth message passed from a gated action
     const msg = sessionStorage.getItem('authMessage');
@@ -791,6 +817,39 @@ const afterRender = {
         }
       }
     });
+    if (forgotLink) forgotLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (forgotForm) {
+        const visible = forgotForm.style.display !== 'none';
+        forgotForm.style.display = visible ? 'none' : 'grid';
+        if (!visible) {
+          // prefill with login email if present
+          const loginEmail = document.getElementById('loginEmail');
+          if (loginEmail && loginEmail.value) forgotEmail.value = loginEmail.value;
+        }
+      }
+    });
+    if (forgotForm) forgotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.style.display = 'inline-block';
+      status.textContent = 'Sending reset link...';
+      try {
+        const emailVal = (forgotEmail && forgotEmail.value) || (document.getElementById('loginEmail')?.value) || '';
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: emailVal })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'send_failed');
+        status.textContent = 'If an account exists, a reset email has been sent.';
+        status.style.backgroundColor = '#dcfce7';
+        status.style.color = '#16a34a';
+        (document.getElementById('forgotSubmitBtn')).disabled = true;
+      } catch (err) {
+        status.textContent = 'Unable to send reset email. Please try again later.';
+        status.style.backgroundColor = '#fee2e2';
+        status.style.color = '#dc2626';
+      }
+    });
     if (createForm) createForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       status.style.display = 'inline-block';
@@ -818,6 +877,49 @@ const afterRender = {
         } else {
           status.textContent = 'Unable to create account. Please try again.';
         }
+      }
+    });
+  },
+  "/reset-password": () => {
+    const status = document.getElementById('resetStatus');
+    const form = document.getElementById('resetForm');
+    const p1 = document.getElementById('resetPassword');
+    const p2 = document.getElementById('resetPassword2');
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (!token && status) {
+      status.style.display = 'inline-block';
+      status.textContent = 'No reset token provided.';
+      status.style.backgroundColor = '#fee2e2';
+      status.style.color = '#dc2626';
+      return;
+    }
+    if (form) form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.style.display = 'inline-block';
+      status.textContent = 'Updating password...';
+      try {
+        if (!p1.value || p1.value.length < 8) throw new Error('password_too_short');
+        if (p1.value !== p2.value) throw new Error('password_mismatch');
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, new_password: p1.value })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'reset_failed');
+        status.textContent = 'Password updated. You can now sign in.';
+        status.style.backgroundColor = '#dcfce7';
+        status.style.color = '#16a34a';
+        setTimeout(() => { history.pushState({}, '', '/signin'); render(); }, 1000);
+      } catch (err) {
+        if (err.message === 'password_too_short') {
+          status.textContent = 'Password must be at least 8 characters.';
+        } else if (err.message === 'password_mismatch') {
+          status.textContent = 'Passwords do not match. Please try again.';
+        } else {
+          status.textContent = 'Unable to reset password. The link may be invalid or expired.';
+        }
+        status.style.backgroundColor = '#fee2e2';
+        status.style.color = '#dc2626';
       }
     });
   },
