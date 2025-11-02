@@ -17,6 +17,13 @@ import adminMe from "../src/api/admin/me.js";
 import stylesList from "../src/api/styles/list.js";
 import stylesPreview from "../src/api/styles/preview.js";
 import usersList from "../src/api/admin/users/list.js";
+import jobsList from "../src/api/jobs/list.js";
+import jobsCreate from "../src/api/jobs/create.js";
+import jobPhotoGet from "../src/api/jobs/photo_get.js";
+import jobPhotoSet from "../src/api/jobs/photo_set.js";
+import jobResultGet from "../src/api/jobs/result_get.js";
+import jobResultSet from "../src/api/jobs/result_set.js";
+import jobView from "../src/api/jobs/view.js";
 
 // If you have more routes in src/api/* add them here similarly
 
@@ -53,6 +60,15 @@ app.get("/api/styles/:id/preview", stylesPreview);
 
 // Admin
 app.get("/api/admin/users", usersList);
+
+// Jobs
+app.get("/api/jobs", jobsList);
+app.post("/api/jobs/create", jobsCreate);
+app.get("/api/jobs/:id/photo", jobPhotoGet);
+app.post("/api/jobs/:id/photo", jobPhotoSet);
+app.get("/api/jobs/:id/result", jobResultGet);
+app.post("/api/jobs/:id/result", jobResultSet);
+app.get("/api/jobs/:id", jobView);
 
 // Export as a request handler for Vercel Serverless Functions
 export default (req, res) => app(req, res);
