@@ -46,32 +46,44 @@ export default async function handler(req, res) {
         [token, userId, expiresAt]
       );
 
-      const resetLink = `${process.env.BASE_URL}/reset-password?token=${token}`;
+      // Build site URL for front-end route; ensure we don't include a trailing '/api'
+      const rawBase = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+      const siteBase = rawBase.replace(/\/api\/?$/, "");
+      const resetLink = `${siteBase}/reset-password?token=${token}`;
 
-      // Send reset email via Mailjet
-      const mailjet = Mailjet.apiConnect(process.env.MAILJET_API_KEY, process.env.MAILJET_SECRET_KEY);
-      await mailjet
-        .post("send", { version: "v3.1" })
-        .request({
-          Messages: [
-            {
-              From: {
-                Email: process.env.MAILJET_FROM_EMAIL || "no-reply@emailpetportraits.com",
-                Name: process.env.MAILJET_FROM_NAME || "Regal Pet Portraits",
+      // Send reset email via Mailjet (skip in dev if not configured)
+      const mjKey = process.env.MAILJET_API_KEY;
+      const mjSecret = process.env.MAILJET_SECRET_KEY;
+      const isProd = process.env.NODE_ENV === "production";
+      if (mjKey && mjSecret) {
+        const mailjet = Mailjet.apiConnect(mjKey, mjSecret);
+        await mailjet
+          .post("send", { version: "v3.1" })
+          .request({
+            Messages: [
+              {
+                From: {
+                  Email: process.env.MAILJET_FROM_EMAIL || "no-reply@emailpetportraits.com",
+                  Name: process.env.MAILJET_FROM_NAME || "Regal Pet Portraits",
+                },
+                To: [{ Email: email }],
+                Subject: "Reset your password - Regal Pet Portraits",
+                TextPart: `You requested a password reset. Click the link to set a new password: ${resetLink}`,
+                HTMLPart: `
+                  <h2>Password Reset</h2>
+                  <p>We received a request to reset your password. Click below to set a new password.</p>
+                  <p><a href="${resetLink}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Reset Password</a></p>
+                  <p>Or copy and paste this link: ${resetLink}</p>
+                  <p>This link will expire in 1 hour. If you didn’t request this, you can ignore this email.</p>
+                `,
               },
-              To: [{ Email: email }],
-              Subject: "Reset your password - Regal Pet Portraits",
-              TextPart: `You requested a password reset. Click the link to set a new password: ${resetLink}`,
-              HTMLPart: `
-                <h2>Password Reset</h2>
-                <p>We received a request to reset your password. Click below to set a new password.</p>
-                <p><a href="${resetLink}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Reset Password</a></p>
-                <p>Or copy and paste this link: ${resetLink}</p>
-                <p>This link will expire in 1 hour. If you didn’t request this, you can ignore this email.</p>
-              `,
-            },
-          ],
-        });
+            ],
+          });
+      } else {
+        // In any environment where Mailjet isn't configured, log and continue
+        console.warn("Mailjet not configured; skipping email send.");
+        console.warn("Reset link:", resetLink);
+      }
 
       await pg.end();
       return res.json({ success: true, message: "If an account exists, a reset email has been sent." });

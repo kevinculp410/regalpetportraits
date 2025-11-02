@@ -41,7 +41,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// CORS for local dev: allow frontend on 3003 to call backend on this port
+// CORS: allow all origins in production, and common localhost ports in dev
+const isProd = process.env.NODE_ENV === "production";
 const allowedOrigins = new Set([
   "http://localhost:3003",
   "http://127.0.0.1:3003",
@@ -53,7 +54,11 @@ const allowedOrigins = new Set([
 app.use(cors({
   origin: function(origin, callback) {
     // Allow same-origin or non-browser requests
-    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    if (!origin) return callback(null, true);
+    // In production, allow any origin (served as single origin; avoids blocking)
+    if (isProd) return callback(null, true);
+    // In dev, allow selected localhost origins
+    if (allowedOrigins.has(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true

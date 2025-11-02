@@ -20,3 +20,4 @@ public/uploads/
 # Misc
 .cache/
 .vscode/
+.vercel
