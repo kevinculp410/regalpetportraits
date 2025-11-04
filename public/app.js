@@ -58,23 +58,46 @@ function HomePage() {
         </details>
         <details class="card">
           <summary class="title" style="padding:12px;">How do I order?</summary>
-          <div class="body">Choose a style, upload a clear photo, and complete checkout. You’ll receive a proof within 24 hours.</div>
+          <div class="body">Choose a style, upload a clear photo, and complete checkout. You’ll receive your print ready digital download within 10 Minutes.</div>
         </details>
         <details class="card">
           <summary class="title" style="padding:12px;">Which pets are supported?</summary>
           <div class="body">Dogs, cats, and most household pets. If you’re unsure, contact us and we’ll confirm.</div>
         </details>
         <details class="card">
-          <summary class="title" style="padding:12px;">How long does it take?</summary>
-          <div class="body">Proofs are usually ready within 24 hours. Printing and shipping typically take 2–5 days after approval.</div>
+          <summary class="title" style="padding:12px;">Can I order a physical print?</summary>
+          <div class="body">We do not sell physical prints, but we have partners where you can get traditional physical prints as well as canvas prints.</div>
         </details>
         <details class="card">
-          <summary class="title" style="padding:12px;">Can I request revisions?</summary>
-          <div class="body">Yes—unlimited revisions until you’re 100% happy with the artwork.</div>
+          <summary class="title" style="padding:12px;">How long does it take to get my order?</summary>
+          <div class="body">Your digital file download is delivered within 5-10 minutes.</div>
         </details>
         <details class="card">
-          <summary class="title" style="padding:12px;">Do you offer gifts?</summary>
-          <div class="body">Absolutely. You can order for a recipient or purchase a gift card.</div>
+          <summary class="title" style="padding:12px;">What does it cost?</summary>
+          <div class="body">
+            <p>Our standard resolution digital file download that can produce prints up to 8x10 is only <strong>$9.99</strong>. Our 4× upscaled digital file download capable of large, print-ready output is <strong>$14.98</strong>.</p>
+            <div class="card" style="margin-top:8px;">
+              <div class="title">Standard Portrait — $9.99</div>
+              <div class="muted">High-quality digital portrait of your pet in your chosen style</div>
+              <ul>
+                <li>1024×1024 resolution</li>
+                <li>Digital download</li>
+                <li>Perfect for social media</li>
+                <li>Ready in 24–48 hours</li>
+              </ul>
+            </div>
+            <div class="card" style="margin-top:8px;">
+              <div class="title">Premium Portrait + Upscale — $14.98</div>
+              <div class="muted">Everything in Standard plus high-resolution upscaling for printing</div>
+              <ul>
+                <li>1024×1024 base resolution</li>
+                <li>4× upscaled to 4096×4096</li>
+                <li>Perfect for large prints</li>
+                <li>Print-ready quality</li>
+                <li>Ready in 24–48 hours</li>
+              </ul>
+            </div>
+          </div>
         </details>
       </div>
     </section>
@@ -83,8 +106,8 @@ function HomePage() {
       <div class="container" style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;">
         <div>CopyRight 2025 @<a href="https://www.BlueSkyAiAutomation.com" style="color:#fff;text-decoration:underline;">BlueSkyAiAutomation</a></div>
         <div style="display:flex;gap:12px;">
-          <a href="/privacy" data-route style="color:#fff;text-decoration:underline;">Privacy Policy</a>
-          <a href="/terms" data-route style="color:#fff;text-decoration:underline;">Terms and Service</a>
+          <a href="https://blueskyaiautomation.com/privacy-policy" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;">Privacy Policy</a>
+          <a href="https://blueskyaiautomation.com/terms-of-service" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;">Terms of Service</a>
         </div>
       </div>
     </footer>
@@ -132,12 +155,29 @@ function UploadPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const styleId = urlParams.get('style_id') || sessionStorage.getItem('styleId');
   const styleTitle = urlParams.get('style_title') || sessionStorage.getItem('styleTitle') || 'regency';
-  const stylePreviewUrl = `${window.API_BASE_URL}/api/styles/${styleId}/preview`;
+  let stylePreviewUrl = `${window.API_BASE_URL}/api/styles/${styleId}/preview`;
   
   // Store in sessionStorage for later use
   if (styleId) sessionStorage.setItem('styleId', styleId);
   if (styleTitle) sessionStorage.setItem('styleTitle', styleTitle);
   if (styleId) sessionStorage.setItem('stylePreviewUrl', stylePreviewUrl);
+
+  // Try to resolve direct preview URL from styles API for better reliability
+  (async () => {
+    try {
+      if (styleId) {
+        const stylesRes = await fetch('/api/styles');
+        const stylesData = await stylesRes.json();
+        const match = (stylesData.data || []).find(s => String(s.id) === String(styleId));
+        if (match && match.id) {
+          stylePreviewUrl = `/api/styles/${match.id}/preview`;
+          sessionStorage.setItem('stylePreviewUrl', stylePreviewUrl);
+          const el = document.querySelector('.style-preview img');
+          if (el) el.src = stylePreviewUrl;
+        }
+      }
+    } catch (_) {}
+  })();
   
   return `
     <section class="container">
@@ -149,8 +189,9 @@ function UploadPage() {
       <p>Use a well-lit photo with your pet facing forward. Avoid blurry or dark images.</p>
 
       <div class="upload-zone">
-        <input id="fileInput" type="file" accept="image/*" />
+        <input id="fileInput" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" />
         <p class="muted">Drag & drop or choose a file</p>
+        <p class="muted" style="margin-top:6px;">Only JPG, JPEG, or PNG files under 5MB are accepted.</p>
       </div>
 
       <div id="uploadStatus" class="pill" style="display:none; margin-top:10px;"></div>
@@ -224,14 +265,32 @@ function DashboardPage() {
   return `
     <section class="container">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-        <h1>Your Portraits</h1>
+        <h1>Dashboard</h1>
         <a href="/styles" class="btn primary" data-route id="placeOrderBtn">Place Order</a>
       </div>
+      <div class="tabs" style="display:flex; gap:8px; margin:12px 0;">
+        <button class="tab active" data-tab="jobs">Jobs</button>
+        <button class="tab" data-tab="account">Account Information</button>
+      </div>
       <div id="dashboardStatus" class="pill" style="display:none; margin:8px 0;"></div>
-      <h2 style="margin-top:16px;">Previous Jobs</h2>
-      <div id="orderList" class="order-list">
-        <div class="loading" style="text-align:center; padding:40px; color:#6b7280;">
-          Loading your portraits...
+      <div id="jobsSection">
+        <h2 style="margin-top:8px;">Previous Jobs</h2>
+        <p class="muted" style="margin-top:4px;">Job records will be deleted after 30 days.</p>
+        <div id="orderList" class="order-list">
+          <div class="loading" style="text-align:center; padding:40px; color:#6b7280;">
+            Loading your portraits...
+          </div>
+        </div>
+      </div>
+      <div id="accountSection" style="display:none;">
+        <h2 style="margin-top:8px;">Account Information</h2>
+        <div id="accountInfo" class="grid" style="max-width:560px;">
+          <div><strong>Email:</strong> <span id="accountEmail">—</span></div>
+          <div><strong>Signed Up:</strong> <span id="accountSignup">—</span></div>
+          <div class="hero-actions" style="margin-top:12px;">
+            <button class="btn" id="resetPasswordBtn">Reset Password</button>
+          </div>
+          <div id="accountStatus" class="pill" style="margin-top:10px; display:none;"></div>
         </div>
       </div>
     </section>
@@ -274,11 +333,34 @@ function SignInPage() {
 function FAQsPage() {
   const faqs = [
     { q: "What is a Regal Pet Portrait?", a: "A custom artwork of your pet in regal attire inspired by classic portrait styles." },
-    { q: "How do I order?", a: "Choose a style, upload a clear photo, and complete checkout. You’ll receive a proof within 24 hours." },
+    { q: "How do I order?", a: "Choose a style, upload a clear photo, and complete checkout. You’ll receive your print ready digital download within 10 Minutes." },
     { q: "Which pets are supported?", a: "Dogs, cats, and most household pets. If you’re unsure, contact us and we’ll confirm." },
-    { q: "How long does it take?", a: "Proofs are usually ready within 24 hours. Printing and shipping typically take 2–5 days after approval." },
-    { q: "Can I request revisions?", a: "Yes—unlimited revisions until you’re 100% happy with the artwork." },
-    { q: "Do you offer gifts?", a: "Absolutely. You can order for a recipient or purchase a gift card." },
+    { q: "Can I order a physical print?", a: "We do not sell physical prints, but we have partners where you can get traditional physical prints as well as canvas prints." },
+    { q: "How long does it take to get my order?", a: "Your digital file download is delivered within 5-10 minutes." },
+    { q: "What does it cost?", a: `
+      <p>Our standard resolution digital file download that can produce prints up to 8x10 is only <strong>$9.99</strong>. Our 4× upscaled digital file download capable of large, print-ready output is <strong>$14.98</strong>.</p>
+      <div class="card" style="margin-top:8px;">
+        <div class="title">Standard Portrait — $9.99</div>
+        <div class="muted">High-quality digital portrait of your pet in your chosen style</div>
+        <ul>
+          <li>1024×1024 resolution</li>
+          <li>Digital download</li>
+          <li>Perfect for social media</li>
+          <li>Ready in 24–48 hours</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-top:8px;">
+        <div class="title">Premium Portrait + Upscale — $14.98</div>
+        <div class="muted">Everything in Standard plus high-resolution upscaling for printing</div>
+        <ul>
+          <li>1024×1024 base resolution</li>
+          <li>4× upscaled to 4096×4096</li>
+          <li>Perfect for large prints</li>
+          <li>Print-ready quality</li>
+          <li>Ready in 24–48 hours</li>
+        </ul>
+      </div>
+    ` },
   ];
   return `
     <section class="container">
@@ -345,43 +427,26 @@ function ContactPage() {
 
 function AdminPage() {
   return `
-    <section class="container">
-      <h1>Admin</h1>
-      <p>Login with admin credentials to manage styles and users.</p>
+    <section class="container" style="max-width:1000px;">
+      <h1>Admin Dashboard</h1>
+      <p class="muted">Sign in to manage users, styles, jobs, and archives.</p>
 
-      <form id="adminLoginForm" class="form" style="max-width:400px; margin:16px 0;">
+      <form id="adminLoginForm" class="form" style="max-width:420px; margin:16px 0;">
         <input id="adminLoginEmail" type="email" placeholder="Admin email" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
         <input id="adminLoginPassword" type="password" placeholder="Password" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
         <div class="hero-actions"><button class="btn" type="submit">Login</button></div>
         <div id="adminLoginStatus" class="pill" style="margin-top:10px; display:none;"></div>
       </form>
 
-      <div id="adminContent" style="display:none;">
-        <div class="subnav" style="margin-bottom:16px; display:flex; gap:8px;">
-          <a href="/admin" data-route class="btn primary">Styles</a>
-          <a href="/admin/users" data-route class="btn">Users</a>
+      <div id="adminShell" style="display:none;">
+        <div class="tabs" style="display:flex; gap:8px; border-bottom:1px solid #e5e7eb; margin-bottom:12px;">
+          <a href="/admin?tab=users" data-route class="tab" data-tab="users" style="padding:8px 12px; border:1px solid #e5e7eb; border-bottom:none; border-radius:8px 8px 0 0;">Users</a>
+          <a href="/admin?tab=styles" data-route class="tab" data-tab="styles" style="padding:8px 12px; border:1px solid #e5e7eb; border-bottom:none; border-radius:8px 8px 0 0;">Styles</a>
+          <a href="/admin?tab=sales" data-route class="tab" data-tab="sales" style="padding:8px 12px; border:1px solid #e5e7eb; border-bottom:none; border-radius:8px 8px 0 0;">Sales</a>
+          <a href="/admin?tab=archive" data-route class="tab" data-tab="archive" style="padding:8px 12px; border:1px solid #e5e7eb; border-bottom:none; border-radius:8px 8px 0 0;">Archive</a>
+          <a href="/admin?tab=account" data-route class="tab" data-tab="account" style="padding:8px 12px; border:1px solid #e5e7eb; border-bottom:none; border-radius:8px 8px 0 0;">Account</a>
         </div>
-
-        <h1>Upload Styles</h1>
-        <form id="adminUploadForm" class="form" style="max-width:500px; margin:20px 0;">
-          <input id="styleTitle" type="text" placeholder="Style title (e.g., Royal Regency)" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
-          <textarea id="styleDescription" placeholder="Style description (optional)" rows="3" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;"></textarea>
-          <div class="upload-zone" style="margin:16px 0;">
-            <input id="styleImageInput" type="file" accept="image/*" required />
-            <p class="muted">Choose a style preview image</p>
-          </div>
-          <div id="stylePreview" class="preview" style="display:none; margin:16px 0;">
-            <img id="stylePreviewImg" src="" alt="Preview" style="max-width:200px;border-radius:8px;border:1px solid #e5e7eb;" />
-          </div>
-          <div class="hero-actions">
-            <button id="adminUploadBtn" class="btn primary" type="submit">Upload Style</button>
-            <button id="adminDeleteAllBtn" class="btn" type="button">Delete All Styles</button>
-          </div>
-          <div id="adminStatus" class="pill" style="margin-top:10px; display:none;"></div>
-        </form>
-
-        <h2>Current Styles</h2>
-        <div id="adminStylesList" class="grid"></div>
+        <div id="adminTabContent" style="border:1px solid #e5e7eb; border-radius:0 8px 8px 8px; padding:12px;"></div>
       </div>
     </section>
   `;
@@ -404,10 +469,135 @@ function AdminUsersPage() {
         <div class="subnav" style="margin-bottom:16px; display:flex; gap:8px;">
           <a href="/admin" data-route class="btn">Styles</a>
           <a href="/admin/users" data-route class="btn primary">Users</a>
+          <a href="/admin/account" data-route class="btn">Admin Account</a>
+          <a href="/admin/archive" data-route class="btn">Archive</a>
         </div>
 
         <div id="adminUsersStatus" class="pill" style="margin-top:10px; display:none;"></div>
         <div id="adminUsersList" class="grid"></div>
+      </div>
+    </section>
+  `;
+}
+
+function AdminArchivePage() {
+  return `
+    <section class="container">
+      <h1>Admin - Archive Jobs</h1>
+      <p>Archive all jobs created before a specified date.</p>
+
+      <form id="adminLoginForm" class="form" style="max-width:400px; margin:16px 0;">
+        <input id="adminLoginEmail" type="email" placeholder="Admin email" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <input id="adminLoginPassword" type="password" placeholder="Password" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <div class="hero-actions"><button class="btn" type="submit">Login</button></div>
+        <div id="adminLoginStatus" class="pill" style="margin-top:10px; display:none;"></div>
+      </form>
+
+      <div id="adminContent" style="display:none;">
+        <div class="subnav" style="margin-bottom:16px; display:flex; gap:8px;">
+          <a href="/admin" data-route class="btn">Styles</a>
+          <a href="/admin/users" data-route class="btn">Users</a>
+          <a href="/admin/jobs" data-route class="btn">Users Jobs</a>
+          <a href="/admin/account" data-route class="btn">Admin Account</a>
+          <a href="/admin/archive" data-route class="btn primary">Archive</a>
+        </div>
+
+        <form id="archiveForm" class="form" style="max-width:480px; margin-top:16px;">
+          <label class="muted" for="archiveDate">Archive jobs created before:</label>
+          <input id="archiveDate" type="date" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+          <div class="hero-actions">
+            <button id="archiveSubmitBtn" class="btn primary" type="submit">Archive Jobs</button>
+          </div>
+          <div id="archiveStatus" class="pill" style="margin-top:10px; display:none;"></div>
+        </form>
+
+        <div class="muted" style="margin-top:8px;">
+          This will move matching jobs to the archive table and hide them from the Users view.
+        </div>
+
+        <hr style="margin:24px 0;" />
+
+        <h2>Archived Jobs</h2>
+        <form id="archiveFilterForm" class="form" style="max-width:720px; margin-top:12px; display:grid; grid-template-columns: 1fr 1fr auto auto auto; gap:8px; align-items:end;">
+          <div>
+            <label class="muted" for="filterStart">Start date</label>
+            <input id="filterStart" type="date" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+          </div>
+          <div>
+            <label class="muted" for="filterEnd">End date</label>
+            <input id="filterEnd" type="date" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+          </div>
+          <div>
+            <button id="filterApplyBtn" class="btn" type="submit">Apply</button>
+          </div>
+          <div>
+            <button id="generateListBtn" class="btn" type="button">Generate List</button>
+          </div>
+          <div>
+            <button id="showAllBtn" class="btn" type="button">Show All</button>
+          </div>
+        </form>
+        <div class="hero-actions" style="margin-top:8px;">
+          <button id="exportCsvBtn" class="btn" type="button">Export CSV</button>
+        </div>
+        <div id="archiveListStatus" class="pill" style="margin-top:8px; display:none;"></div>
+        <div id="archivedList" class="grid" style="margin-top:12px;"></div>
+      </div>
+    </section>
+  `;
+}
+
+function AdminJobsPage() {
+  return `
+    <section class="container">
+      <h1>Admin - Users Jobs</h1>
+      <p>View all jobs across users.</p>
+
+      <form id="adminLoginForm" class="form" style="max-width:400px; margin:16px 0;">
+        <input id="adminLoginEmail" type="email" placeholder="Admin email" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <input id="adminLoginPassword" type="password" placeholder="Password" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <div class="hero-actions"><button class="btn" type="submit">Login</button></div>
+        <div id="adminLoginStatus" class="pill" style="margin-top:10px; display:none;"></div>
+      </form>
+
+      <div id="adminContent" style="display:none;">
+        <div class="subnav" style="margin-bottom:16px; display:flex; gap:8px;">
+          <a href="/admin" data-route class="btn">Styles</a>
+          <a href="/admin/users" data-route class="btn">Users</a>
+          <a href="/admin/account" data-route class="btn">Admin Account</a>
+          <a href="/admin/archive" data-route class="btn">Archive</a>
+        </div>
+
+        <div id="adminJobsStatus" class="pill" style="margin-top:10px; display:none;"></div>
+        <div id="adminJobsList" class="grid"></div>
+      </div>
+    </section>
+  `;
+}
+
+function AdminAccountPage() {
+  return `
+    <section class="container">
+      <h1>Admin - Account</h1>
+      <p>View admin account information.</p>
+
+      <form id="adminLoginForm" class="form" style="max-width:400px; margin:16px 0;">
+        <input id="adminLoginEmail" type="email" placeholder="Admin email" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <input id="adminLoginPassword" type="password" placeholder="Password" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <div class="hero-actions"><button class="btn" type="submit">Login</button></div>
+        <div id="adminLoginStatus" class="pill" style="margin-top:10px; display:none;"></div>
+      </form>
+
+      <div id="adminContent" style="display:none;">
+        <div class="subnav" style="margin-bottom:16px; display:flex; gap:8px;">
+          <a href="/admin" data-route class="btn">Styles</a>
+          <a href="/admin/users" data-route class="btn">Users</a>
+          <a href="/admin/account" data-route class="btn primary">Admin Account</a>
+          <a href="/admin/archive" data-route class="btn">Archive</a>
+        </div>
+
+        <div id="adminAccountStatus" class="pill" style="margin-top:10px; display:none;"></div>
+        <div id="adminAccountInfo" class="grid" style="max-width:560px;"></div>
       </div>
     </section>
   `;
@@ -439,10 +629,28 @@ function ResetPasswordPage() {
   `;
 }
 
+function AdminResetPage() {
+  return `
+    <section class="container" style="max-width:720px;">
+      <h1>Admin Password Reset</h1>
+      <p class="muted">Enter the admin email to receive a reset link.</p>
+      <form id="adminResetForm" class="grid" style="max-width:560px;">
+        <input id="adminResetEmail" type="email" placeholder="admin@example.com" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <button class="btn primary" type="submit" id="adminResetSubmitBtn">Send reset link</button>
+      </form>
+      <div id="adminResetStatus" class="pill" style="margin-top:10px; display:none;"></div>
+      <div class="muted" style="margin-top:8px;">
+        This page is not linked in navigation. Bookmark it for future use.
+      </div>
+    </section>
+  `;
+}
+
 const routes = {
   "/": HomePage,
   "/signin": SignInPage,
   "/reset-password": ResetPasswordPage,
+  "/admin/reset": AdminResetPage,
   "/styles": StylesPage,
   "/upload": UploadPage,
   "/checkout": CheckoutPage,
@@ -453,11 +661,46 @@ const routes = {
   "/contact": ContactPage,
   "/admin": AdminPage,
   "/admin/styles": AdminPage,
-  "/admin/users": AdminUsersPage,
+  "/admin/users": AdminPage,
+  "/admin/jobs": AdminPage,
+  "/admin/account": AdminPage,
+  "/admin/archive": AdminPage,
   "/verify-email": VerifyEmailPage,
 };
 
 const afterRender = {
+  "/admin/reset": () => {
+    const form = document.getElementById('adminResetForm');
+    const emailInput = document.getElementById('adminResetEmail');
+    const status = document.getElementById('adminResetStatus');
+    if (emailInput) emailInput.value = 'admin@blueskyaiaa.com';
+    if (!form || !status) return;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.style.display = 'inline-block';
+      status.textContent = 'Sending reset email...';
+      status.style.backgroundColor = '#eef2ff';
+      status.style.color = '#3730a3';
+      const email = (emailInput?.value || '').trim();
+      try {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'failed');
+        status.textContent = 'Reset email sent. Check inbox for the link.';
+        status.style.backgroundColor = '#dcfce7';
+        status.style.color = '#16a34a';
+        (document.getElementById('adminResetSubmitBtn')).disabled = true;
+      } catch (err) {
+        status.textContent = 'Unable to send reset email. Please try again later.';
+        status.style.backgroundColor = '#fee2e2';
+        status.style.color = '#dc2626';
+      }
+    });
+  },
   "/styles": async () => {
     const grid = document.getElementById('gridStyles');
     if (!grid) return;
@@ -552,6 +795,38 @@ const afterRender = {
     input.addEventListener('change', async () => {
       const file = input.files?.[0];
       if (!file) return;
+
+      // Validate file type and size (JPG/JPEG/PNG under 5MB)
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+      const ext = (file.name || '').toLowerCase();
+      const validExt = ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png');
+      const validType = allowedTypes.includes(file.type);
+      const typeOk = validType || validExt;
+      const sizeOk = file.size <= maxSizeBytes;
+      if (!typeOk || !sizeOk) {
+        // Build reason-specific message for modal
+        const reason = (!typeOk && !sizeOk)
+          ? 'The selected file is the wrong format and exceeds the 5MB size limit.'
+          : (!typeOk
+            ? 'The selected file is the wrong format.'
+            : 'The selected file exceeds the 5MB size limit.');
+
+        // Show status pill and modal, prevent upload
+        status.style.display = 'inline-block';
+        status.style.backgroundColor = '#fee2e2';
+        status.style.color = '#dc2626';
+        status.textContent = !typeOk && !sizeOk
+          ? 'Invalid file type and size. Please select a JPG/JPEG/PNG under 5MB.'
+          : (!typeOk ? 'Invalid file type. Please select a JPG/JPEG/PNG file.' : 'File exceeds 5MB. Please select a smaller image.');
+        showUploadErrorModal(reason);
+
+        // Immediately clear local state so nothing proceeds
+        input.value = '';
+        preview.style.display = 'none';
+        sessionStorage.removeItem('petPreviewUrl');
+        return;
+      }
 
       // Ensure styleId exists
       const styleId = sessionStorage.getItem('styleId');
@@ -682,21 +957,45 @@ const afterRender = {
             return;
           }
 
-          // 3) Upload to S3 via presigned URL
+          // 3) Upload to S3 via presigned URL, with fallback to direct upload
           status.textContent = 'Uploading photo...';
-          const putRes = await fetch(presign.url, { method: 'PUT', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file });
-          if (!putRes.ok) {
-            status.style.backgroundColor = '#fee2e2';
-            status.style.color = '#dc2626';
-            status.textContent = 'Upload failed (S3). Please try a different photo or contact support.';
-            return;
+          let uploadedS3Key = presign.s3_key;
+          try {
+            const putRes = await fetch(presign.url, { method: 'PUT', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file });
+            if (!putRes.ok) throw new Error('s3_put_failed');
+          } catch (_) {
+            // Fallback: direct upload to server to bypass CORS
+            status.textContent = 'S3 upload blocked; using server upload...';
+            const buf = await file.arrayBuffer();
+            const directRes = await fetch('/api/uploads/direct', {
+              method: 'POST',
+              headers: {
+                'Content-Type': file.type || 'application/octet-stream',
+                'x-job-id': jobId,
+                'x-filename': file.name
+              },
+              credentials: 'include',
+              body: buf
+            });
+            const directCt = directRes.headers.get('content-type') || '';
+            if (!directCt.includes('application/json')) {
+              throw new Error(`server_response_not_json_${directRes.status}`);
+            }
+            const direct = await directRes.json();
+            if (!directRes.ok || !direct.ok) {
+              status.style.backgroundColor = '#fee2e2';
+              status.style.color = '#dc2626';
+              status.textContent = `Upload failed (server): ${direct.error || directRes.status}`;
+              return;
+            }
+            uploadedS3Key = direct.s3_key;
           }
 
           // Save S3 key for checkout
-          sessionStorage.setItem('petS3Key', presign.s3_key);
+          sessionStorage.setItem('petS3Key', uploadedS3Key);
           // Build and store pet_file for checkout
-          if (presign.s3_key) {
-            const parts = presign.s3_key.split('/');
+          if (uploadedS3Key) {
+            const parts = uploadedS3Key.split('/');
             const userIdFromKey = parts[1];
             const jobIdFromKey = parts[2];
             const filename = parts.slice(3).join('/');
@@ -710,7 +1009,7 @@ const afterRender = {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
-              body: JSON.stringify({ s3_key: presign.s3_key })
+              body: JSON.stringify({ s3_key: uploadedS3Key })
             });
           } catch (_) {}
           status.textContent = 'Upload complete! You can continue to checkout.';
@@ -798,13 +1097,22 @@ const afterRender = {
           email: document.getElementById('loginEmail').value,
           password: document.getElementById('loginPassword').value,
         };
-        const res = await fetch('/api/auth/signin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const res = await fetch('/api/auth/signin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || 'Sign in failed');
         }
         status.textContent = 'Welcome back! Redirecting…';
-        const dest = sessionStorage.getItem('postLoginRedirect') || '/dashboard';
+        // Determine destination: prioritize any explicit post-login intent, else send admins to dashboard
+        let dest = sessionStorage.getItem('postLoginRedirect');
+        try {
+          const adminRes = await fetch('/api/admin/me', { credentials: 'include' });
+          const adminMe = await adminRes.json();
+          if (!dest && adminMe.logged_in && adminMe.is_admin) {
+            dest = '/admin/users';
+          }
+        } catch (_) {}
+        if (!dest) dest = '/dashboard';
         if (sessionStorage.getItem('postLoginRedirect')) sessionStorage.removeItem('postLoginRedirect');
         setTimeout(() => { history.pushState({}, '', dest); render(); }, 600);
       } catch (err) {
@@ -924,261 +1232,786 @@ const afterRender = {
     });
   },
   "/admin": async () => {
+    // Unified admin handler: controls login and tabbed content
     const loginForm = document.getElementById('adminLoginForm');
     const loginStatus = document.getElementById('adminLoginStatus');
-    const adminContent = document.getElementById('adminContent');
-    const uploadForm = document.getElementById('adminUploadForm');
-    const status = document.getElementById('adminStatus');
-    const imageInput = document.getElementById('styleImageInput');
-    const preview = document.getElementById('stylePreview');
-    const previewImg = document.getElementById('stylePreviewImg');
-    const stylesList = document.getElementById('adminStylesList');
+    const shell = document.getElementById('adminShell');
+    const tabContent = document.getElementById('adminTabContent');
 
-    // Check admin status
-    try {
-      const meRes = await fetch(`${window.API_BASE_URL}/api/admin/me`);
-      const me = await meRes.json();
-      if (me.logged_in && me.is_admin) {
-        adminContent.style.display = 'block';
-        loginForm.style.display = 'none';
-      } else {
-        adminContent.style.display = 'none';
-        loginForm.style.display = 'block';
-      }
-    } catch (e) {
-      adminContent.style.display = 'none';
-      loginForm.style.display = 'block';
-    }
-
-    // Admin login
-    if (loginForm) loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      loginStatus.style.display = 'inline-block';
-      loginStatus.textContent = 'Logging in...';
+    const isAdminSession = async () => {
       try {
-        const payload = {
-          email: document.getElementById('adminLoginEmail').value,
-          password: document.getElementById('adminLoginPassword').value
-        };
-        const res = await fetch(`${window.API_BASE_URL}/api/auth/admin/login`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-        });
-        const out = await res.json();
-        if (!res.ok) throw new Error(out.error || 'Login failed');
-        loginStatus.textContent = 'Logged in.';
-        setTimeout(() => { history.pushState({}, '', '/admin'); render(); }, 600);
-      } catch (err) {
-        loginStatus.textContent = `Login failed: ${err.message}`;
+        const meRes = await fetch(`${window.API_BASE_URL}/api/admin/me`, { credentials: 'include' });
+        const me = await meRes.json();
+        return !!(me && me.logged_in && me.is_admin);
+      } catch (_) {
+        return false;
       }
-    });
+    };
 
-    // Preview selected image
-    if (imageInput) imageInput.addEventListener('change', () => {
-      const file = imageInput.files && imageInput.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        previewImg.src = reader.result;
-        preview.style.display = 'block';
+    const currentTab = (() => {
+      const url = new URL(window.location.href);
+      const explicit = (url.searchParams.get('tab') || '').trim();
+      if (explicit) return explicit;
+      const path = window.location.pathname;
+      if (path.startsWith('/admin/users')) return 'users';
+      if (path.startsWith('/admin/styles') || path === '/admin') return 'styles';
+      if (path.startsWith('/admin/jobs')) return 'jobs';
+      if (path.startsWith('/admin/sales')) return 'sales';
+      if (path.startsWith('/admin/archive')) return 'archive';
+      if (path.startsWith('/admin/account')) return 'account';
+      return 'users';
+    })();
+
+    const renderAdminTab = (tab) => {
+      if (!tabContent) return;
+      // Minimal shells for each tab with expected element IDs
+      const shells = {
+        styles: `
+          <div id="adminContent" style="display:none;">
+            <h2>Manage Styles</h2>
+            <form id="adminUploadForm" class="form" style="max-width:520px; margin-top:12px;">
+              <input id="styleTitle" type="text" placeholder="Style title" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              <input id="styleDescription" type="text" placeholder="Style description" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              <input id="styleImageInput" type="file" accept="image/*" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              <div class="hero-actions">
+                <button id="adminUploadBtn" class="btn primary">Upload Style</button>
+                <button id="adminDeleteAllBtn" class="btn" type="button">Delete ALL Styles</button>
+              </div>
+              <div id="adminStatus" class="pill" style="margin-top:10px; display:none;"></div>
+            </form>
+            <div id="stylePreview" style="display:none; margin-top:12px;">
+              <img id="stylePreviewImg" alt="Preview" style="max-width:200px;border-radius:8px;border:1px solid #e5e7eb;" />
+            </div>
+            <h3 style="margin-top:16px;">Current Styles</h3>
+            <div id="adminStylesList" class="grid"></div>
+          </div>
+        `,
+        users: `
+          <div id="adminContent" style="display:none;">
+            <h2>Users</h2>
+            <div id="adminUsersStatus" class="pill" style="margin-top:10px; display:none;"></div>
+            <div id="adminUsersList" class="grid"></div>
+          </div>
+        `,
+        jobs: `
+          <div id="adminContent" style="display:none;">
+            <h2>User Jobs</h2>
+            <div id="adminJobsStatus" class="pill" style="margin-top:10px; display:none;"></div>
+            <div id="adminJobsList" class="grid"></div>
+          </div>
+        `,
+        sales: `
+          <div id="adminContent" style="display:none;">
+            <h2>Sales</h2>
+            <form id="salesFilterForm" class="form" style="max-width:920px; margin-top:12px; display:grid; grid-template-columns: 1fr 1fr 2fr auto auto; gap:8px; align-items:end;">
+              <div>
+                <label class="muted" for="salesStart">Start date</label>
+                <input id="salesStart" type="date" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              </div>
+              <div>
+                <label class="muted" for="salesEnd">End date</label>
+                <input id="salesEnd" type="date" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              </div>
+              <div>
+                <label class="muted" for="salesUsername">Username/email</label>
+                <input id="salesUsername" type="text" placeholder="user or email" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              </div>
+              <div>
+                <button id="salesApplyBtn" class="btn" type="submit">Apply</button>
+              </div>
+              <div>
+                <button id="salesShowAllBtn" class="btn" type="button">Show All</button>
+              </div>
+            </form>
+            <div id="adminSalesStatus" class="pill" style="margin-top:8px; display:none;"></div>
+            <div id="adminSalesList" style="margin-top:12px;"></div>
+          </div>
+        `,
+        account: `
+          <div id="adminContent" style="display:none; max-width:560px;">
+            <h2>Admin Account</h2>
+            <div id="adminAccountStatus" class="pill" style="margin-top:10px; display:none;"></div>
+            <div id="adminAccountInfo" class="grid"></div>
+          </div>
+        `,
+        archive: `
+          <div id="adminContent" style="display:none;">
+            <h2>Archive Jobs</h2>
+            <form id="archiveForm" class="form" style="max-width:480px; margin-top:12px;">
+              <label class="muted" for="archiveDate">Archive jobs created before:</label>
+              <input id="archiveDate" type="date" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              <div class="hero-actions">
+                <button id="archiveSubmitBtn" class="btn primary" type="submit">Archive Jobs</button>
+              </div>
+              <div id="archiveStatus" class="pill" style="margin-top:10px; display:none;"></div>
+            </form>
+            <div class="muted" style="margin-top:8px;">This will move matching jobs to the archive table and hide them from the Users view.</div>
+            <hr style="margin:24px 0;" />
+            <h2>Archived Jobs</h2>
+            <form id="archiveFilterForm" class="form" style="max-width:720px; margin-top:12px; display:grid; grid-template-columns: 1fr 1fr auto auto auto; gap:8px; align-items:end;">
+              <div>
+                <label class="muted" for="filterStart">Start date</label>
+                <input id="filterStart" type="date" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              </div>
+              <div>
+                <label class="muted" for="filterEnd">End date</label>
+                <input id="filterEnd" type="date" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+              </div>
+              <div>
+                <button id="filterApplyBtn" class="btn" type="submit">Apply</button>
+              </div>
+              <div>
+                <button id="generateListBtn" class="btn" type="button">Generate List</button>
+              </div>
+              <div>
+                <button id="showAllBtn" class="btn" type="button">Show All</button>
+              </div>
+            </form>
+            <div class="hero-actions" style="margin-top:8px;">
+              <button id="exportCsvBtn" class="btn" type="button">Export CSV</button>
+            </div>
+            <div id="archiveListStatus" class="pill" style="margin-top:8px; display:none;"></div>
+            <div id="archivedList" class="grid" style="margin-top:12px;"></div>
+          </div>
+        `
       };
-      reader.readAsDataURL(file);
-    });
+      tabContent.innerHTML = shells[tab] || shells['users'];
+    };
 
-    // Upload style
-    const uploadBtn = document.getElementById('adminUploadBtn');
-    if (uploadBtn) uploadBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      status.style.display = 'inline-block';
-      status.textContent = 'Uploading style...';
-      try {
-        const title = document.getElementById('styleTitle').value;
-        const description = document.getElementById('styleDescription').value;
-        const fileInput = document.getElementById('styleImageInput');
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) throw new Error('No file selected');
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const imageData = reader.result;
-          const payload = { title, description, imageData, fileName: file.name };
-          const res = await fetch(`${window.API_BASE_URL}/api/styles`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-          });
-          const out = await res.json();
-          if (!res.ok) throw new Error(out.error || 'Upload failed');
-          status.textContent = 'Style uploaded.';
-          setTimeout(() => { history.pushState({}, '', '/admin'); render(); }, 800);
-        };
-        reader.readAsDataURL(file);
-      } catch (err) {
-        status.textContent = `Upload failed: ${err.message}`;
-      }
-    });
+    // Per-tab loaders (minimal functional)
+    const loadStyles = async () => {
+      const listEl = document.getElementById('adminStylesList');
+      const statusEl = document.getElementById('adminStatus');
+      const inputEl = document.getElementById('styleImageInput');
+      const previewWrap = document.getElementById('stylePreview');
+      const previewImg = document.getElementById('stylePreviewImg');
+      const uploadBtn = document.getElementById('adminUploadBtn');
+      const deleteAllBtn = document.getElementById('adminDeleteAllBtn');
 
-    // Delete ALL styles
-    const delAll = document.getElementById('adminDeleteAllBtn');
-    if (delAll) delAll.addEventListener('click', async () => {
-      if (!confirm('Delete ALL styles from database and S3?')) return;
-      status.style.display = 'inline-block';
-      status.textContent = 'Deleting all styles...';
-      try {
-        const res = await fetch(`${window.API_BASE_URL}/api/styles/delete-all`, { method: 'POST' });
-        const out = await res.json();
-        if (!res.ok || !out.success) throw new Error(out.error || 'Delete all failed');
-        status.textContent = `Deleted ${out.deleted_rows} styles.`;
-        setTimeout(() => { history.pushState({}, '', '/admin'); render(); }, 800);
-      } catch (err) {
-        status.textContent = `Delete all failed: ${err.message}`;
-      }
-    });
-
-    // Load current styles (smaller previews)
-    try {
-      const response = await fetch(`${window.API_BASE_URL}/api/styles`);
-      const data = await response.json();
-      if (data.data && stylesList) {
-        stylesList.innerHTML = data.data.map(item => `
-          <div class="card" style="display:flex; gap:12px; align-items:flex-start;">
-            <img src="${window.API_BASE_URL}/api/styles/${item.id}/preview" alt="${item.title}" style="max-width:200px;border-radius:8px;border:1px solid #e5e7eb;" />
-            <div class="body">
-              <div class="title">${item.title}</div>
-              <div class="muted">${item.description || ''}</div>
-              <div class="actions">
-                <button class="btn" data-delete data-style-id="${item.id}">Delete</button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-      }
-    } catch (_) {}
-
-    // Hook per-style delete buttons
-    document.querySelectorAll('[data-delete][data-style-id]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const styleId = btn.getAttribute('data-style-id');
-        if (!styleId) return;
-        if (!confirm('Delete this style from database and S3?')) return;
-        status.style.display = 'inline-block';
-        status.textContent = 'Deleting style...';
-        try {
-          const res = await fetch(`${window.API_BASE_URL}/api/styles/${styleId}`, { method: 'DELETE' });
-          const payload = await res.json();
-          if (!res.ok || !payload.success) throw new Error(payload.error || 'Delete failed');
-          status.textContent = 'Style deleted.';
-          setTimeout(() => { history.pushState({}, '', '/admin'); render(); }, 800);
-        } catch (err) {
-          status.textContent = `Delete failed: ${err.message}`;
-        }
-      });
-    });
-  },
-  "/admin/styles": async () => { if (afterRender["/admin"]) await afterRender["/admin"](); },
-  "/admin/users": async () => {
-    const loginForm = document.getElementById('adminLoginForm');
-    const loginStatus = document.getElementById('adminLoginStatus');
-    const adminContent = document.getElementById('adminContent');
-    const status = document.getElementById('adminUsersStatus');
-    const list = document.getElementById('adminUsersList');
-    if (!list) return;
-    try {
-      const meRes = await fetch(`${window.API_BASE_URL}/api/admin/me`);
-      const me = await meRes.json();
-      if (!me.logged_in || !me.is_admin) {
-        adminContent.style.display = 'none';
-        loginForm.style.display = 'block';
-        status.style.display = 'inline-block';
-        status.textContent = 'Admin login required to view users.';
-        return;
-      } else {
-        adminContent.style.display = 'block';
-        loginForm.style.display = 'none';
-      }
-    } catch (_) {
-      adminContent.style.display = 'none';
-      loginForm.style.display = 'block';
-      status.style.display = 'inline-block';
-      status.textContent = 'Could not verify admin session.';
-      return;
-    }
-
-    // Admin login (Users page)
-    if (loginForm) loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      loginStatus.style.display = 'inline-block';
-      loginStatus.textContent = 'Logging in...';
-      try {
-        const payload = {
-          email: document.getElementById('adminLoginEmail').value,
-          password: document.getElementById('adminLoginPassword').value
-        };
-        const res = await fetch(`${window.API_BASE_URL}/api/auth/admin/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const out = await res.json();
-        if (!res.ok) throw new Error(out.error || 'Login failed');
-        loginStatus.textContent = 'Logged in.';
-        setTimeout(() => { history.pushState({}, '', '/admin/users'); render(); }, 600);
-      } catch (err) {
-        loginStatus.textContent = `Login failed: ${err.message}`;
-      }
-    });
-
-    status.style.display = 'inline-block';
-    status.textContent = 'Loading users...';
-    try {
-      const res = await fetch(`${window.API_BASE_URL}/api/admin/users`);
-      const out = await res.json();
-      if (!res.ok) throw new Error(out.error || 'Failed to load users');
-      const data = out.data || [];
-      status.style.display = 'none';
-      list.innerHTML = data.map(u => {
-        const jobs = (u.jobs || []).map(j => `
-          <div class="order" style="display:flex; gap:12px; align-items:center;">
-            <div style="flex:1;">
-              <div class="title">Job ${j.id}</div>
-              <div class="muted">Style: ${j.style_id} · Status: ${j.status}</div>
-              <div class="muted">${j.prompt_text || ''}</div>
-            </div>
-            <div class="actions"><button class="btn" data-delete-job data-job-id="${j.id}">Delete Job</button></div>
-          </div>
-        `).join('');
-        return `
-          <div class="card">
-            <div class="body">
-              <div class="title">${u.email}${u.name ? ` · ${u.name}` : ''}</div>
-              <div class="muted">Joined ${new Date(u.created_at).toLocaleString()}</div>
-              <div style="margin-top:8px;">
-                ${jobs || '<div class="muted">No jobs.</div>'}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      // Hook job delete buttons
-      document.querySelectorAll('[data-delete-job][data-job-id]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const jobId = btn.getAttribute('data-job-id');
-          if (!jobId) return;
-          if (!confirm('Delete this job?')) return;
-          status.style.display = 'inline-block';
-          status.textContent = 'Deleting job...';
-          try {
-            const del = await fetch(`${window.API_BASE_URL}/api/admin/jobs/${jobId}`, { method: 'DELETE' });
-            const out = await del.json();
-            if (!del.ok || !out.success) throw new Error(out.error || 'Delete failed');
-            status.textContent = 'Job deleted.';
-            setTimeout(() => { history.pushState({}, '', '/admin/users'); render(); }, 600);
-          } catch (err) {
-            status.textContent = `Delete failed: ${err.message}`;
+      if (inputEl && previewWrap && previewImg) {
+        inputEl.addEventListener('change', () => {
+          const f = inputEl.files && inputEl.files[0];
+          if (f) {
+            const url = URL.createObjectURL(f);
+            previewImg.src = url;
+            previewWrap.style.display = 'block';
+          } else {
+            previewWrap.style.display = 'none';
+            previewImg.src = '';
           }
         });
+      }
+
+      const refresh = async () => {
+        try {
+          const r = await fetch(`${window.API_BASE_URL}/api/styles`, { credentials: 'include' });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'load_failed');
+          const items = d.data || [];
+          const rows = [];
+          for (let i = 0; i < items.length; i += 5) {
+            rows.push(items.slice(i, i + 5));
+          }
+
+          const renderCell = (s) => {
+            const prev = `${window.API_BASE_URL}/api/styles/${s.id}/preview`;
+            return `
+              <td style="vertical-align:top; padding:8px; width:20%;">
+                <div class="card" style="height:280px; display:flex; flex-direction:column;">
+                  <img src="${prev}" alt="${s.title}" style="width:100%; height:160px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; background:#fff;" />
+                  <div class="body" style="padding:8px; display:flex; flex-direction:column; gap:6px; flex:1;">
+                    <div class="title" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s.title}</div>
+                    <div class="muted" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s.description || ''}</div>
+                    <div class="actions" style="margin-top:auto;">
+                      <button class="btn delete-style" data-id="${s.id}">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            `;
+          };
+
+          const tableHtml = rows.length ? `
+            <table style="width:100%; border-collapse:separate; border-spacing:8px;">
+              <tbody>
+                ${rows.map(row => `
+                  <tr>
+                    ${row.map(renderCell).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : `<div class="muted" style="padding:12px;">No styles found.</div>`;
+
+          listEl.innerHTML = tableHtml;
+          listEl.querySelectorAll('.delete-style').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const id = btn.getAttribute('data-id');
+              try {
+                const del = await fetch(`${window.API_BASE_URL}/api/styles/${id}`, { method: 'DELETE', credentials: 'include' });
+                const dd = await del.json();
+                if (!del.ok) throw new Error(dd.error || 'delete_failed');
+                await refresh();
+              } catch (e) {
+                if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Delete failed: ${e.message}`; }
+              }
+            });
+          });
+        } catch (e) {
+          if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Load failed: ${e.message}`; }
+        }
+      };
+
+      if (uploadBtn) uploadBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = 'Uploading...'; }
+        try {
+          const title = document.getElementById('styleTitle').value || '';
+          const description = document.getElementById('styleDescription').value || '';
+          const file = inputEl && inputEl.files && inputEl.files[0];
+          if (!file || !title) throw new Error('missing_fields');
+
+          // Convert file to base64 Data URL to match API contract
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+          });
+
+          const payload = {
+            title,
+            description,
+            imageData: String(dataUrl || ''),
+            fileName: file.name || 'upload.png'
+          };
+
+          const r = await fetch(`${window.API_BASE_URL}/api/styles`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            credentials: 'include'
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'upload_failed');
+          if (statusEl) { statusEl.textContent = 'Uploaded.'; }
+          // Clear chooser
+          if (inputEl) inputEl.value = '';
+          if (previewWrap) previewWrap.style.display = 'none';
+          if (previewImg) previewImg.src = '';
+          await refresh();
+        } catch (e) {
+          if (statusEl) { statusEl.textContent = `Upload failed: ${e.message}`; }
+        }
       });
-    } catch (err) {
-      status.textContent = `Load failed: ${err.message}`;
+
+      if (deleteAllBtn) deleteAllBtn.addEventListener('click', async () => {
+        try {
+          const r = await fetch(`${window.API_BASE_URL}/api/styles/delete-all`, { method: 'POST', credentials: 'include' });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'delete_all_failed');
+          await refresh();
+        } catch (e) {
+          if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Delete all failed: ${e.message}`; }
+        }
+      });
+
+      await refresh();
+      const content = document.getElementById('adminContent');
+      if (content) content.style.display = 'block';
+    };
+
+    // Helper: show full Job ID in a lightweight popup
+    window.showFullJobId = (id) => {
+      try {
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.background = 'rgba(0,0,0,0.35)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.zIndex = '9999';
+
+        const box = document.createElement('div');
+        box.style.background = '#fff';
+        box.style.borderRadius = '8px';
+        box.style.padding = '16px 20px';
+        box.style.minWidth = '320px';
+        box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+
+        box.innerHTML = `
+          <div style="font-size:16px; font-weight:600; margin-bottom:8px;">Full Job ID</div>
+          <div id="jobIdValue" style="font-family: monospace; word-break: break-all;">${id}</div>
+          <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px; align-items:center;">
+            <button class="btn" id="jobIdCopyBtn">Copy</button>
+            <span id="jobIdCopyStatus" style="font-size:12px; color:#4b5563; display:none;">Copied!</span>
+            <button class="btn" id="jobIdCloseBtn">Close</button>
+          </div>
+        `;
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        const close = () => { try { document.body.removeChild(overlay); } catch(_) {} };
+        overlay.addEventListener('click', close);
+        box.addEventListener('click', (e) => e.stopPropagation());
+        const closeBtn = box.querySelector('#jobIdCloseBtn');
+        if (closeBtn) closeBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); close(); });
+
+        const copyBtn = box.querySelector('#jobIdCopyBtn');
+        const statusEl = box.querySelector('#jobIdCopyStatus');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(String(id));
+              } else {
+                const ta = document.createElement('textarea');
+                ta.value = String(id);
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'absolute';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (_) {}
+                document.body.removeChild(ta);
+              }
+              if (statusEl) {
+                statusEl.style.display = 'inline';
+                setTimeout(() => { statusEl.style.display = 'none'; }, 1500);
+              }
+            } catch (_) {
+              // As a last resort, show the ID so the user can copy manually
+              alert(`Job ID: ${id}`);
+            }
+          });
+        }
+      } catch (_) {
+        // Fallback to alert if DOM manipulation fails
+        alert(`Job ID: ${id}`);
+      }
+    };
+
+    const loadUsers = async () => {
+      const statusEl = document.getElementById('adminUsersStatus');
+      const listEl = document.getElementById('adminUsersList');
+      try {
+        const r = await fetch(`${window.API_BASE_URL}/api/admin/users`, { credentials: 'include' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'load_failed');
+
+        const users = d.data || [];
+        listEl.innerHTML = users.map(u => {
+          const jobs = Array.isArray(u.jobs) ? u.jobs : [];
+
+          const tableHeader = `
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:8px;">Photo</th>
+                <th style="text-align:left; padding:8px;">Style</th>
+                <th style="text-align:left; padding:8px;">Date</th>
+                <th style="text-align:left; padding:8px;">Status</th>
+                <th style="text-align:left; padding:8px;">Result</th>
+                <th style="text-align:left; padding:8px;">Job ID</th>
+                <th style="text-align:left; padding:8px;">Standard Link</th>
+                <th style="text-align:left; padding:8px;">Upscale Link</th>
+              </tr>
+            </thead>
+          `;
+
+          const jobRows = jobs.map(j => {
+            // Prefer server redirect that presigns/streams the style preview.
+            // Fallback to stored preview_url only if style_id is missing.
+            const stylePreviewSrc = j.style_id ? `${window.API_BASE_URL}/api/styles/${j.style_id}/preview` : (j.style_preview_url || '');
+            const uploadedSrc = j.photo_url || (j.upload_s3_key ? `${window.API_BASE_URL}/api/jobs/${j.id}/photo` : '');
+            const resultSrc = (j.composite_url || j.result_url || (j.result_s3_key ? `${window.API_BASE_URL}/api/jobs/${j.id}/result` : ''));
+            const upscaledSrc = j.composite_upscaled_url || '';
+            const created = j.created_at ? new Date(j.created_at).toLocaleDateString() : '—';
+
+            const imgCell = (src) => src ? `<img src="${src}" alt="" style="width:96px;height:96px;object-fit:cover;border-radius:8px;" />` : '—';
+            const viewBtn = resultSrc ? `<a class="btn" href="${resultSrc}" target="_blank" rel="noopener noreferrer">View</a>` : '<span class="muted">NA</span>';
+            const upscaleBtn = upscaledSrc ? `<a class="btn" href="${upscaledSrc}" target="_blank" rel="noopener noreferrer">Upscale</a>` : 'NA';
+            const shortId = String(j.id || '').slice(0, 8);
+            const jobLink = `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window.showFullJobId && window.showFullJobId('${String(j.id || '')}');">${shortId}</a>`;
+
+            return `
+              <tr>
+                <td style="padding:8px;">${imgCell(uploadedSrc)}</td>
+                <td style="padding:8px;">${imgCell(stylePreviewSrc)}</td>
+                <td style="padding:8px;">${created}</td>
+                <td style="padding:8px;">${j.status || '—'}</td>
+                <td style="padding:8px;">${imgCell(resultSrc)}</td>
+                <td style="padding:8px;">${jobLink}</td>
+                <td style="padding:8px;">${viewBtn}</td>
+                <td style="padding:8px;">${upscaleBtn}</td>
+              </tr>
+            `;
+          }).join('');
+
+          const table = `
+            <table style="width:100%; border-collapse:separate; border-spacing:0 8px;">
+              ${tableHeader}
+              <tbody>
+                ${jobs.length ? jobRows : '<tr><td colspan="8" class="muted" style="padding:12px;">No jobs for this user.</td></tr>'}
+              </tbody>
+            </table>
+          `;
+
+          return `
+            <details class="card" style="overflow:hidden;">
+              <summary style="cursor:pointer; list-style:none;">
+                <div class="body">
+                  <div class="title">${u.email || u.name || '—'}</div>
+                  <div class="muted">User ID: ${u.id || u.user_id || '—'} • Jobs: ${jobs.length}</div>
+                </div>
+              </summary>
+              <div style="padding:12px;">
+                ${table}
+              </div>
+            </details>
+          `;
+        }).join('');
+
+        const content = document.getElementById('adminContent');
+        if (content) content.style.display = 'block';
+      } catch (e) {
+        if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Load failed: ${e.message}`; }
+      }
+    };
+
+    const loadAccount = async () => {
+      const statusEl = document.getElementById('adminAccountStatus');
+      const infoEl = document.getElementById('adminAccountInfo');
+      try {
+        const r = await fetch(`${window.API_BASE_URL}/api/admin/me`, { credentials: 'include' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'load_failed');
+        infoEl.innerHTML = `
+          <div class="grid" style="max-width:480px;">
+            <div><strong>Email</strong></div><div>${d.user?.email || '—'}</div>
+            <div><strong>Is Admin</strong></div><div>${d.is_admin ? 'Yes' : 'No'}</div>
+          </div>
+        `;
+        const content = document.getElementById('adminContent');
+        if (content) content.style.display = 'block';
+      } catch (e) {
+        if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Load failed: ${e.message}`; }
+      }
+    };
+
+    const loadArchive = async () => {
+      const listEl = document.getElementById('archivedList');
+      const statusEl = document.getElementById('archiveListStatus');
+      const formEl = document.getElementById('archiveForm');
+      const formStatus = document.getElementById('archiveStatus');
+      const filterForm = document.getElementById('archiveFilterForm');
+      const exportBtn = document.getElementById('exportCsvBtn');
+
+      const refresh = async (start = '', end = '') => {
+        try {
+          const params = new URLSearchParams();
+          if (start) params.set('start', start);
+          if (end) params.set('end', end);
+          const url = `${window.API_BASE_URL}/api/admin/jobs/archive-list${params.toString() ? ('?' + params.toString()) : ''}`;
+          const r = await fetch(url, { credentials: 'include' });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'load_failed');
+          const items = d.items || [];
+          const tableHeader = `
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:8px;">Photo</th>
+                <th style="text-align:left; padding:8px;">Style</th>
+                <th style="text-align:left; padding:8px;">Result</th>
+                <th style="text-align:left; padding:8px;">User Email</th>
+                <th style="text-align:left; padding:8px;">Amount</th>
+                <th style="text-align:left; padding:8px;">Status</th>
+                <th style="text-align:left; padding:8px;">Created</th>
+                <th style="text-align:left; padding:8px;">Archived</th>
+                <th style="text-align:left; padding:8px;">Job ID</th>
+              </tr>
+            </thead>
+          `;
+
+          const imgCell = (src) => src ? `<img src="${src}" alt="" style="width:96px;height:96px;object-fit:cover;border-radius:8px;" />` : '—';
+
+          const rows = items.map(j => {
+            const stylePreviewSrc = j.style_id ? `${window.API_BASE_URL}/api/styles/${j.style_id}/preview` : (j.style_preview_url || '');
+            const created = j.created_at ? new Date(j.created_at).toLocaleString() : '—';
+            const archived = j.archived_at ? new Date(j.archived_at).toLocaleString() : '—';
+            const shortId = String(j.job_id || '').slice(0, 8);
+            const jobLink = shortId ? `<a href="#" onclick="event.preventDefault(); window.showFullJobId && window.showFullJobId('${String(j.job_id || '')}');">${shortId}</a>` : '—';
+            const amount = (j.amount_cents != null) ? `$${Number(j.amount_cents).toFixed(2)}` : '—';
+            return `
+              <tr>
+                <td style="padding:8px;">${imgCell(j.photo_url)}</td>
+                <td style="padding:8px;">${imgCell(stylePreviewSrc)}</td>
+                <td style="padding:8px;">${imgCell(j.result_url || j.composite_url)}</td>
+                <td style="padding:8px;">${j.user_email || '—'}</td>
+                <td style="padding:8px;">${amount}</td>
+                <td style="padding:8px;">${j.status || '—'}</td>
+                <td style="padding:8px;">${created}</td>
+                <td style="padding:8px;">${archived}</td>
+                <td style="padding:8px;">${jobLink}</td>
+              </tr>
+            `;
+          }).join('');
+
+          const table = `
+            <table style="width:100%; border-collapse:separate; border-spacing:0 8px;">
+              ${tableHeader}
+              <tbody>
+                ${items.length ? rows : '<tr><td colspan="9" class="muted" style="padding:12px;">No archived jobs found.</td></tr>'}
+              </tbody>
+            </table>
+          `;
+
+          const filterInfo = (start || end) ? `<div class="muted" style="margin-bottom:8px;">Showing archives${start ? ` from ${start}` : ''}${end ? ` to ${end}` : ''}.</div>` : '';
+
+          listEl.innerHTML = `${filterInfo}${table}`;
+          const content = document.getElementById('adminContent');
+          if (content) content.style.display = 'block';
+        } catch (e) {
+          if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Load failed: ${e.message}`; }
+        }
+      };
+
+      if (formEl) formEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (formStatus) { formStatus.style.display = 'inline-block'; formStatus.textContent = 'Archiving...'; }
+        try {
+          const dt = document.getElementById('archiveDate').value;
+          const r = await fetch(`${window.API_BASE_URL}/api/admin/jobs/archive-batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ before_date: dt }), credentials: 'include' });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'archive_failed');
+          formStatus.textContent = 'Archived.';
+          await refresh();
+        } catch (e) {
+          if (formStatus) { formStatus.textContent = `Archive failed: ${e.message}`; }
+        }
+      });
+
+      if (filterForm) filterForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const s = document.getElementById('filterStart').value || '';
+        const e2 = document.getElementById('filterEnd').value || '';
+        await refresh(s, e2);
+      });
+
+      if (exportBtn) exportBtn.addEventListener('click', async () => {
+        try {
+          const s = document.getElementById('filterStart').value || '';
+          const e2 = document.getElementById('filterEnd').value || '';
+          const params = new URLSearchParams();
+          if (s) params.set('start', s);
+          if (e2) params.set('end', e2);
+          const url = `${window.API_BASE_URL}/api/admin/jobs/archive-list${params.toString() ? ('?' + params.toString()) : ''}`;
+          const r = await fetch(url, { credentials: 'include' });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'export_failed');
+          const items = d.items || [];
+          const csvHeader = 'job_id,user_email,amount_cents,status,created_at,archived_at,style_id';
+          const csvRows = items.map(j => [
+            j.job_id,
+            j.user_email || '',
+            j.amount_cents != null ? Number(j.amount_cents).toFixed(2) : '',
+            j.status || '',
+            j.created_at || '',
+            j.archived_at || '',
+            j.style_id || ''
+          ].join(','));
+          const csv = [csvHeader].concat(csvRows).join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'archived_jobs.csv';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (e) {
+          if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Export failed: ${e.message}`; }
+        }
+      });
+
+      await refresh();
+    };
+
+    const loadJobs = async () => {
+      const statusEl = document.getElementById('adminJobsStatus');
+      const listEl = document.getElementById('adminJobsList');
+      try {
+        // Minimal: show current user's jobs (admin user may have none)
+        const r = await fetch(`${window.API_BASE_URL}/api/jobs`, { credentials: 'include' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'load_failed');
+        listEl.innerHTML = (d.data || []).map(job => {
+          const stylePreviewSrc = `${window.API_BASE_URL}/api/styles/${job.style_id}/preview`;
+          const resultImgSrc = job.has_result ? `${window.API_BASE_URL}/api/jobs/${job.id}/result` : '';
+          return `
+            <div class="card">
+              <img src="${stylePreviewSrc}" alt="${job.style_title}" />
+              <div class="body">
+                <div class="title">Job ${job.id}</div>
+                <div class="muted">Status: ${job.status}</div>
+                ${resultImgSrc ? `<div><img src="${resultImgSrc}" alt="result" /></div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+        const content = document.getElementById('adminContent');
+        if (content) content.style.display = 'block';
+      } catch (e) {
+        if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Load failed: ${e.message}`; }
+      }
+    };
+
+    const loadSales = async () => {
+      const statusEl = document.getElementById('adminSalesStatus');
+      const listEl = document.getElementById('adminSalesList');
+      const formEl = document.getElementById('salesFilterForm');
+      const startEl = document.getElementById('salesStart');
+      const endEl = document.getElementById('salesEnd');
+      const userEl = document.getElementById('salesUsername');
+      const showAllBtn = document.getElementById('salesShowAllBtn');
+
+      const renderRows = (items) => {
+        const header = `
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:8px;">User</th>
+              <th style="text-align:left; padding:8px;">Uploaded</th>
+              <th style="text-align:left; padding:8px;">Style</th>
+              <th style="text-align:left; padding:8px;">Job ID</th>
+              <th style="text-align:left; padding:8px;">Standard</th>
+              <th style="text-align:left; padding:8px;">Upscaled</th>
+              <th style="text-align:left; padding:8px;">Price Paid</th>
+              <th style="text-align:left; padding:8px;">Date</th>
+            </tr>
+          </thead>
+        `;
+
+        const cellImg = (src) => src ? `<img src="${src}" alt="" style="width:96px;height:96px;object-fit:cover;border-radius:8px;" />` : '<span class="muted">—</span>';
+        const cellLink = (href, label) => href ? `<a class="btn" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>` : '<span class="muted">NA</span>';
+        const cellJob = (id) => {
+          const shortId = String(id || '').slice(0, 8);
+          return id ? `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window.showFullJobId && window.showFullJobId('${String(id)}');">${shortId}</a>` : '—';
+        };
+
+        const body = items.map(it => {
+          const uploadedSrc = it.photo_url || (it.upload_s3_key ? `${window.API_BASE_URL}/api/jobs/${it.job_id}/photo` : '');
+          const stylePreviewSrc = it.style_id ? `${window.API_BASE_URL}/api/styles/${it.style_id}/preview` : (it.style_preview_url || '');
+          const standardSrc = it.composite_url || it.result_url || (it.result_s3_key ? `${window.API_BASE_URL}/api/jobs/${it.job_id}/result` : '');
+          const upscaledSrc = it.composite_upscaled_url || '';
+          const amount = (it.amount_cents != null) ? `$${Number(it.amount_cents).toFixed(2)}` : '—';
+          const created = it.created_at ? new Date(it.created_at).toLocaleDateString() : '—';
+          const userLabel = [it.user_email, it.user_name].filter(Boolean).join(' • ');
+
+          return `
+            <tr>
+              <td style="padding:8px;">${userLabel || '—'}</td>
+              <td style="padding:8px;">${cellImg(uploadedSrc)}</td>
+              <td style="padding:8px;">${cellImg(stylePreviewSrc)}</td>
+              <td style="padding:8px;">${cellJob(it.job_id)}</td>
+              <td style="padding:8px;">${cellLink(standardSrc, 'View')}</td>
+              <td style="padding:8px;">${cellLink(upscaledSrc, 'Upscale')}</td>
+              <td style="padding:8px;">${amount}</td>
+              <td style="padding:8px;">${created}</td>
+            </tr>
+          `;
+        }).join('');
+
+        return `
+          <table style="width:100%; border-collapse:separate; border-spacing:0 8px;">
+            ${header}
+            <tbody>
+              ${items.length ? body : '<tr><td colspan="8" class="muted" style="padding:12px;">No sales found.</td></tr>'}
+            </tbody>
+          </table>
+        `;
+      };
+
+      const refresh = async () => {
+        try {
+          const params = new URLSearchParams();
+          const start = (startEl && startEl.value) ? startEl.value : '';
+          const end = (endEl && endEl.value) ? endEl.value : '';
+          const uname = (userEl && userEl.value) ? userEl.value.trim() : '';
+          if (start) params.set('start', start);
+          if (end) params.set('end', end);
+          if (uname) params.set('username', uname);
+          const qs = params.toString();
+          if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = 'Loading sales...'; }
+          const r = await fetch(`${window.API_BASE_URL}/api/admin/sales/list${qs ? ('?' + qs) : ''}`, { credentials: 'include' });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'load_failed');
+          listEl.innerHTML = renderRows(d.items || []);
+          const content = document.getElementById('adminContent');
+          if (content) content.style.display = 'block';
+          if (statusEl) { statusEl.style.display = 'none'; }
+        } catch (e) {
+          if (statusEl) { statusEl.style.display = 'inline-block'; statusEl.textContent = `Load failed: ${e.message}`; }
+          const content = document.getElementById('adminContent');
+          if (content) content.style.display = 'block';
+          if (listEl) listEl.innerHTML = '<div class="muted">Unable to load sales. Please check admin login or try again.</div>';
+        }
+      };
+
+      if (formEl) {
+        formEl.addEventListener('submit', (e) => { e.preventDefault(); refresh(); });
+      }
+      if (showAllBtn) {
+        showAllBtn.addEventListener('click', () => {
+          if (startEl) startEl.value = '';
+          if (endEl) endEl.value = '';
+          if (userEl) userEl.value = '';
+          refresh();
+        });
+      }
+
+      await refresh();
+    };
+
+    // Admin login handler (top-level)
+    if (loginForm) loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (loginStatus) { loginStatus.style.display = 'inline-block'; loginStatus.textContent = 'Logging in...'; }
+      try {
+        const payload = { email: document.getElementById('adminLoginEmail').value, password: document.getElementById('adminLoginPassword').value };
+        const res = await fetch(`${window.API_BASE_URL}/api/auth/admin/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'include' });
+        const out = await res.json();
+        if (!res.ok) throw new Error(out.error || 'Login failed');
+        if (loginStatus) loginStatus.textContent = 'Logged in.';
+        setTimeout(() => { history.pushState({}, '', '/admin?tab=users'); render(); }, 600);
+      } catch (err) {
+        if (loginStatus) loginStatus.textContent = `Login failed: ${err.message}`;
+      }
+    });
+
+    // Check admin session and render appropriate shell
+    const ok = await isAdminSession();
+    if (ok) {
+      if (shell) shell.style.display = 'block';
+      if (loginForm) loginForm.style.display = 'none';
+      renderAdminTab(currentTab);
+      if (currentTab === 'styles') await loadStyles();
+      else if (currentTab === 'users') await loadUsers();
+      else if (currentTab === 'jobs') await loadJobs();
+      else if (currentTab === 'sales') await loadSales();
+      else if (currentTab === 'account') await loadAccount();
+      else if (currentTab === 'archive') await loadArchive();
+    } else {
+      if (shell) shell.style.display = 'none';
+      if (loginForm) loginForm.style.display = 'block';
     }
   },
+  "/admin/styles": async () => { if (afterRender["/admin"]) await afterRender["/admin"](); },
+  "/admin/users": async () => { if (afterRender["/admin"]) await afterRender["/admin"](); },
+  "/admin/jobs": async () => { if (afterRender["/admin"]) await afterRender["/admin"](); },
+  "/admin/account": async () => { if (afterRender["/admin"]) await afterRender["/admin"](); },
+  "/admin/archive": async () => { if (afterRender["/admin"]) await afterRender["/admin"](); },
   "/verify-email": async () => {
     const status = document.getElementById('verifyStatus');
     const urlParams = new URLSearchParams(window.location.search);
@@ -1321,11 +2154,36 @@ const afterRender = {
     });
   },
   "/dashboard": async () => {
+    // Removed admin redirect: admins can view the user dashboard normally
+
     const orderList = document.getElementById('orderList');
     const status = document.getElementById('dashboardStatus');
+    const tabs = document.querySelectorAll('.tab');
+    const jobsSection = document.getElementById('jobsSection');
+    const accountSection = document.getElementById('accountSection');
+    const accountEmail = document.getElementById('accountEmail');
+    const accountSignup = document.getElementById('accountSignup');
+    const accountStatus = document.getElementById('accountStatus');
+    const resetBtn = document.getElementById('resetPasswordBtn');
     
     if (!orderList) return;
     
+    // Tabs switcher
+    if (tabs && tabs.length) {
+      tabs.forEach(btn => btn.addEventListener('click', () => {
+        tabs.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.getAttribute('data-tab');
+        if (tab === 'account') {
+          jobsSection.style.display = 'none';
+          accountSection.style.display = 'block';
+        } else {
+          accountSection.style.display = 'none';
+          jobsSection.style.display = 'block';
+        }
+      }));
+    }
+
     // Check if user is logged in first
     try {
       const meRes = await fetch('/api/auth/me');
@@ -1337,8 +2195,50 @@ const afterRender = {
             <a href="/signin" class="btn primary" data-route>Sign In</a>
           </div>
         `;
+        if (accountSection) {
+          accountSection.innerHTML = `
+            <div class="pill" style="display:inline-block;">Please sign in to view account information.</div>
+          `;
+        }
         return;
       }
+
+      // Populate account info
+      if (accountEmail) accountEmail.textContent = me.user?.email || '—';
+      if (accountSignup) {
+        const d = me.user?.created_at ? new Date(me.user.created_at) : null;
+        accountSignup.textContent = d ? d.toLocaleString() : '—';
+      }
+
+      // Reset password trigger
+      if (resetBtn) resetBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (accountStatus) {
+          accountStatus.style.display = 'inline-block';
+          accountStatus.textContent = 'Sending reset link...';
+          accountStatus.style.backgroundColor = '';
+          accountStatus.style.color = '';
+        }
+        try {
+          const emailVal = me.user?.email || '';
+          const res = await fetch('/api/auth/forgot-password', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: emailVal })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'send_failed');
+          if (accountStatus) {
+            accountStatus.textContent = 'If your account exists, a reset email has been sent.';
+            accountStatus.style.backgroundColor = '#dcfce7';
+            accountStatus.style.color = '#16a34a';
+          }
+        } catch (err) {
+          if (accountStatus) {
+            accountStatus.textContent = 'Unable to send reset email. Please try again.';
+            accountStatus.style.backgroundColor = '#fee2e2';
+            accountStatus.style.color = '#dc2626';
+          }
+        }
+      });
     } catch (err) {
       orderList.innerHTML = `
         <div style="text-align:center; padding:40px;">
@@ -1388,18 +2288,19 @@ const afterRender = {
             const statusText = displayStatus;
             const dateText = job.completed_at ? new Date(job.completed_at).toLocaleDateString() : '—';
             const photoUrl = job.has_photo ? `/api/jobs/${job.id}/photo` : '';
-            const resultUrl = job.has_result ? `/api/jobs/${job.id}/result` : '';
-            const viewHref = job.has_result ? (job.view_url || job.result_url || resultUrl) : '';
+            const resultImgSrc = job.has_result ? `/api/jobs/${job.id}/result` : '';
+            const viewHref = job.has_result ? (job.view_url || job.result_url || `/api/jobs/${job.id}/result`) : '';
             const upscaledHref = (job.composite_upscaled_url || '').trim();
             const fullJobId = String(job.id || '');
             const shortJobId = fullJobId.slice(0, 8);
+            const stylePreviewSrc = `/api/styles/${job.style_id}/preview`;
             return [
               `<div class="order-row">`
               , `<div>${photoUrl ? `<img src="${photoUrl}" alt="Pet photo" />` : `<span class=\"muted\">No photo</span>`}</div>`
-              , `<div><img src="/api/styles/${job.style_id}/preview" alt="${job.style_title}" /></div>`
+              , `<div><img src="${stylePreviewSrc}" alt="${job.style_title}" /></div>`
               , `<div>${dateText}</div>`
               , `<div class="status" style="color:${statusColor}">${statusText}</div>`
-              , `<div>${resultUrl ? `<img src="${resultUrl}" alt="Finished portrait" />` : `<span class=\"muted\">—</span>`}</div>`
+              , `<div>${resultImgSrc ? `<img src="${resultImgSrc}" alt="Finished portrait" />` : `<span class=\"muted\">—</span>`}</div>`
               , `<div><a href="#" class="job-id" data-job-id="${fullJobId}" style="font-family:monospace;">${shortJobId}</a></div>`
               , `<div>${viewHref ? `<a href="${viewHref}" class="btn" target="_blank" rel="noopener">View</a>` : `<span class=\"muted\">Not ready</span>`}</div>`
               , `<div>${upscaledHref ? `<a href="${upscaledHref}" class="btn" target="_blank" rel="noopener">Upscale</a>` : `<span class=\"muted\">NA</span>`}</div>`
@@ -1488,6 +2389,58 @@ function showJobIdModal(id) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 }
 
+// Modal for upload errors with reason and page reset
+function showUploadErrorModal(reason) {
+  // Remove any existing modal
+  const existing = document.getElementById('uploadErrorModal');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'uploadErrorModal';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.background = 'rgba(0,0,0,0.4)';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+
+  overlay.innerHTML = `
+    <div style="background:#fff;padding:16px;border-radius:12px;max-width:520px;width:92%;box-shadow:0 8px 24px rgba(17,24,39,0.25);">
+      <h3 style="margin:0 0 8px 0;">Upload Failed</h3>
+      <p style="margin:0 0 8px 0;">${reason}</p>
+      <p class="muted" style="margin:0 0 12px 0;">Files must be <strong>JPG, JPEG, or PNG</strong> and under <strong>5MB</strong>.</p>
+      <div class="hero-actions" style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+        <button id="uploadErrorOkBtn" class="btn primary" type="button">OK</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const okBtn = overlay.querySelector('#uploadErrorOkBtn');
+
+  const resetPage = () => {
+    try {
+      // Clear local UI state
+      const input = document.getElementById('fileInput');
+      const preview = document.getElementById('preview');
+      if (input) input.value = '';
+      if (preview) preview.style.display = 'none';
+      sessionStorage.removeItem('petPreviewUrl');
+      // Navigate back to upload and re-render
+      history.pushState({}, '', '/upload');
+      render();
+    } catch (_) {
+      // Fallback to reload
+      location.reload();
+    }
+  };
+
+  const close = () => { overlay.remove(); resetPage(); };
+  okBtn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+}
+
 function getStatusColor(status) {
   switch (status) {
     case 'created': return '#f59e0b';
@@ -1522,14 +2475,26 @@ async function updateAuthNav() {
   if (!authNav) return;
   
   try {
-    const response = await fetch('/api/auth/me');
+    const response = await fetch('/api/auth/me', { credentials: 'include' });
     const data = await response.json();
     
     if (data.logged_in && data.user) {
+      // Check if the logged-in user is an admin
+      let isAdmin = false;
+      try {
+        const adminRes = await fetch(`${window.API_BASE_URL}/api/admin/me`, { credentials: 'include' });
+        const adminInfo = await adminRes.json();
+        isAdmin = !!(adminInfo && adminInfo.logged_in && adminInfo.is_admin);
+      } catch (_) { /* ignore */ }
+
       const userName = data.user.name || data.user.email.split('@')[0];
+      // For admins, show Admin link instead of Dashboard
+      const mainLink = isAdmin
+        ? '<a href="/admin/users" data-route style="margin-right: 8px;">Admin</a>'
+        : '<a href="/dashboard" data-route style="margin-right: 8px;">Dashboard</a>';
       authNav.innerHTML = `
         <span style="color: #16a34a; margin-right: 8px;">Hi, ${userName}!</span>
-        <a href="/dashboard" data-route style="margin-right: 8px;">Dashboard</a>
+        ${mainLink}
         <a href="#" id="signOutBtn">Sign out</a>
       `;
       
