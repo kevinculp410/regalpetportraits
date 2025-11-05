@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync } from "crypto";
+import { randomBytes, scryptSync, randomUUID } from "crypto";
 import { Client } from "pg";
 import Mailjet from "node-mailjet";
 import { getSiteBase } from "../util/site.js";
@@ -30,12 +30,13 @@ export default async function handler(req, res) {
       const salt = randomBytes(16).toString("hex");
       const hash = scryptSync(password, salt, 64).toString("hex");
 
-      // Create user (unverified)
+      // Create user (unverified) — generate UUID app-side to avoid pgcrypto dependency
+      const newUserId = randomUUID();
       const userResult = await pg.query(
         `INSERT INTO pet_portraits.users (id, email, name, password_hash, password_salt, email_verified, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, FALSE, NOW(), NOW())
+         VALUES ($1, $2, $3, $4, $5, FALSE, NOW(), NOW())
          RETURNING id, email`,
-        [email, name || null, hash, salt]
+        [newUserId, email, name || null, hash, salt]
       );
       const userId = userResult.rows[0].id;
 
