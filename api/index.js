@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import { Client } from "pg";
+import { clearAuthCookie } from "../src/api/util/cookies.js";
 
 // API route handlers (reuse existing implementation under src/api/*)
 // Use lazy imports inside route handlers to avoid crashing cold starts
@@ -14,6 +16,62 @@ app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 // Same-origin on Vercel, so CORS is permissive or unnecessary; keep simple
 app.use(cors());
+
+// Global idle-timeout middleware: clears auth when inactive beyond threshold
+app.use(async (req, res, next) => {
+  try {
+    const cookie = req.headers.cookie || "";
+    const cookieMap = Object.fromEntries(cookie.split(";").map(x => x.trim().split("=")));
+    const uid = cookieMap.uid || null;
+    if (!uid || !process.env.DATABASE_URL) return next();
+
+    const thresholdMs = Number(process.env.IDLE_TIMEOUT_MS || 600000); // default 10 minutes
+    const schema = process.env.DB_SCHEMA || "pet_portraits";
+    const now = new Date();
+
+    const pg = new Client({ connectionString: process.env.DATABASE_URL });
+    await pg.connect();
+    try {
+      await pg.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+      await pg.query(`
+        CREATE TABLE IF NOT EXISTS ${schema}.session_activity (
+          user_id UUID PRIMARY KEY,
+          last_activity TIMESTAMPTZ NOT NULL,
+          updated_at TIMESTAMPTZ NOT NULL
+        )
+      `);
+
+      const r = await pg.query(`SELECT last_activity FROM ${schema}.session_activity WHERE user_id = $1`, [uid]);
+      if (!r.rowCount) {
+        // First touch for this user
+        await pg.query(`INSERT INTO ${schema}.session_activity (user_id, last_activity, updated_at) VALUES ($1, $2, $2)`, [uid, now]);
+        await pg.end();
+        return next();
+      }
+
+      const last = new Date(r.rows[0].last_activity);
+      if (now.getTime() - last.getTime() > thresholdMs) {
+        // Idle expired: clear cookie and make downstream think unauthenticated
+        clearAuthCookie(req, res);
+        req.headers.cookie = (req.headers.cookie || '').replace(/uid=[^;]*/, 'uid=');
+        await pg.query(`UPDATE ${schema}.session_activity SET last_activity = $2, updated_at = $2 WHERE user_id = $1`, [uid, now]);
+        await pg.end();
+        return next();
+      }
+
+      // Active: update last_activity
+      await pg.query(`UPDATE ${schema}.session_activity SET last_activity = $2, updated_at = $2 WHERE user_id = $1`, [uid, now]);
+      await pg.end();
+      return next();
+    } catch (dbErr) {
+      await pg.end();
+      // On DB errors, proceed without enforcing idle timeout
+      return next();
+    }
+  } catch (_) {
+    return next();
+  }
+});
 
 // Health check
 app.get("/api/ping", (req, res) => res.json({ ok: true, pong: true }));
