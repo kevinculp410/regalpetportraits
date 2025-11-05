@@ -21,6 +21,10 @@ app.get("/api/diagnostics/s3", async (req, res) => {
   const mod = await import("../src/api/diagnostics/s3.js");
   return mod.default(req, res);
 });
+app.get("/api/diagnostics/db", async (req, res) => {
+  const mod = await import("../src/api/diagnostics/db.js");
+  return mod.default(req, res);
+});
 
 // Contact
 app.post("/api/contact/send", async (req, res) => {
