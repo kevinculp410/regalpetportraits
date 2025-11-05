@@ -25,6 +25,10 @@ app.get("/api/diagnostics/db", async (req, res) => {
   const mod = await import("../src/api/diagnostics/db.js");
   return mod.default(req, res);
 });
+app.get("/api/diagnostics/mailjet", async (req, res) => {
+  const mod = await import("../src/api/diagnostics/mailjet.js");
+  return mod.default(req, res);
+});
 
 // Contact
 app.post("/api/contact/send", async (req, res) => {
