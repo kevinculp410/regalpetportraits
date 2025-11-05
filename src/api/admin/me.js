@@ -22,12 +22,25 @@ export default async function handler(req, res) {
 
     const pg = new Client({ connectionString: process.env.DATABASE_URL });
     await pg.connect();
+    // Prefer admins table membership; fallback to configured ADMIN_EMAIL
+    let isAdmin = false;
+    let email = null;
+    try {
+      const a = await pg.query(`SELECT 1 FROM pet_portraits.admins WHERE user_id = $1`, [userId]);
+      if (a.rowCount) {
+        const u = await pg.query(`SELECT email FROM pet_portraits.users WHERE id = $1`, [userId]);
+        email = u.rows[0]?.email || null;
+        isAdmin = true;
+      } else {
+        const u = await pg.query(`SELECT email FROM pet_portraits.users WHERE id = $1`, [userId]);
+        email = u.rows[0]?.email || null;
+        const configuredAdminEmail = process.env.ADMIN_EMAIL || '';
+        isAdmin = !!email && !!configuredAdminEmail && email === configuredAdminEmail;
+      }
+    } finally {
+      await pg.end();
+    }
 
-    const u = await pg.query(`SELECT email FROM pet_portraits.users WHERE id = $1`, [userId]);
-    const email = u.rows[0]?.email || null;
-    await pg.end();
-
-    const isAdmin = !!email && email === process.env.ADMIN_EMAIL;
     return res.json({ logged_in: true, is_admin: isAdmin, user: { email } });
   } catch (e) {
     console.error(e);

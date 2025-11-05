@@ -17,11 +17,13 @@ async function isAdmin(userId) {
   await pg.connect();
   
   try {
+    const a = await pg.query(`SELECT 1 FROM pet_portraits.admins WHERE user_id = $1`, [userId]);
+    if (a.rowCount) { await pg.end(); return true; }
     const result = await pg.query(`SELECT email FROM pet_portraits.users WHERE id = $1`, [userId]);
     const userEmail = result.rows[0]?.email;
     await pg.end();
     
-    return userEmail === process.env.ADMIN_EMAIL;
+    return userEmail === (process.env.ADMIN_EMAIL || '');
   } catch (e) {
     await pg.end();
     return false;
