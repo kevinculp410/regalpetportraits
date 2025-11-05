@@ -1,5 +1,6 @@
 import { scryptSync } from "crypto";
 import { Client } from "pg";
+import { setAuthCookie } from "../util/cookies.js";
 
 export default async function handler(req, res) {
   try {
@@ -38,10 +39,8 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: "invalid credentials" });
       }
 
-      // Set authentication cookie
-      const isHttps = (process.env.BASE_URL || '').startsWith('https://');
-      const cookie = `uid=${user.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${isHttps ? '; Secure' : ''}`;
-      res.setHeader("Set-Cookie", cookie);
+      // Set authentication cookie (Secure when https)
+      setAuthCookie(req, res, user.id);
 
       await pg.end();
       return res.json({ 

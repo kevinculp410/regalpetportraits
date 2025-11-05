@@ -234,7 +234,7 @@
   <body>
 <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
 <header class="topbar">
-<div class="brand"><img class="brand-logo" src="/images/hero4.png" alt="Regal Pet Portraits logo"/></div>
+<div class="brand"><a href="/" data-route><img class="brand-logo" src="/images/pet_portraits_logo1.png" alt="Regal Pet Portraits logo"/></a></div>
       <nav class="nav">
         <a href="/" data-route>Home</a>
         <a href="/styles" data-route>Styles</a>
@@ -255,14 +255,14 @@
         This is a test checkout page. Use the form below to test the new Stripe Checkout Session endpoint.
       </div>
 
-      <form id="checkoutForm" class="checkout-form">
+      <form id="checkoutForm" class="checkout-form" novalidate>
         <div id="errorMessage" class="error-message"></div>
 
         <div class="form-section">
           <h3>Order Details</h3>
           <div class="form-group">
             <label for="userEmail">Email Address</label>
-            <input type="email" id="userEmail" name="userEmail" placeholder="your@email.com" />
+            <input type="text" id="userEmail" name="userEmail" placeholder="your@email.com" autocomplete="email" inputmode="email" spellcheck="false" />
           </div>
         </div>
 
@@ -442,6 +442,18 @@
         setVal('wantUpscale', (selected && selected.value === 'upscale') ? 'true' : 'false');
       });
 
+      // Ensure no native browser validation bubbles appear
+      (function() {
+        const form = document.getElementById('checkoutForm');
+        if (form) {
+          try { form.setAttribute('novalidate', ''); } catch (_) {}
+          form.addEventListener('invalid', function(ev) {
+            // Prevent default native validation UI
+            ev.preventDefault();
+          }, true); // capture phase to catch child input invalid events
+        }
+      })();
+
       // Handle package selection
       const packageOptions = document.querySelectorAll('input[name="package"]');
       const pricingOptions = document.querySelectorAll('.pricing-option');
@@ -471,6 +483,16 @@
         });
       });
 
+      // Clear native validation bubble on email input
+      (function() {
+        const emailEl = document.getElementById('userEmail');
+        if (emailEl && typeof emailEl.setCustomValidity === 'function') {
+          emailEl.addEventListener('input', () => {
+            try { emailEl.setCustomValidity(''); } catch (_) {}
+          });
+        }
+      })();
+
       // Handle form submission
       document.getElementById('checkoutForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -487,6 +509,18 @@
         btnText.innerHTML = '<div class="loading"><div class="spinner"></div>Processing...</div>';
         
         try {
+          // Custom email validation to avoid native pattern error
+          const emailEl = document.getElementById('userEmail');
+          const emailVal = (emailEl && (emailEl.value || '').trim()) || '';
+          if (emailVal && !/^([^\s@]+)@([^\s@]+)\.[^\s@]+$/.test(emailVal)) {
+            errorMessage.textContent = 'Please enter a valid email address.';
+            errorMessage.style.display = 'block';
+            emailEl && emailEl.focus();
+            btn.disabled = false;
+            btnText.textContent = 'Proceed to Payment';
+            return;
+          }
+
           const formData = new FormData(this);
           const selectedPackage = formData.get('package');
           const wantUpscale = selectedPackage === 'upscale';
@@ -497,7 +531,7 @@
             style_id: formData.get('styleId'),
             style_name: formData.get('styleName'),
             pet_file: formData.get('petFile'),
-            customer_email: formData.get('userEmail') || undefined,
+            customer_email: emailVal || undefined,
             want_upscale: wantUpscale,
             success_url: `${window.location.origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${window.location.origin}/upload`

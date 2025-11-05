@@ -1,3 +1,5 @@
+import { getSiteBase } from "../util/site.js";
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
@@ -14,9 +16,9 @@ export default async function handler(req, res) {
       job_id,
       style_id,
       style_name,
-      success_url,
-      cancel_url,
-      customer_email,
+      success_url: successUrlRaw,
+      cancel_url: cancelUrlRaw,
+      customer_email: customerEmailRaw,
       want_upscale,
       pet_file
     } = req.body || {};
@@ -29,6 +31,22 @@ export default async function handler(req, res) {
     console.log('- style_name:', style_name);
     console.log('- pet_file:', pet_file);
     console.log('- want_upscale:', want_upscale);
+
+    // Compute safe success/cancel URLs: prefer provided, else derive from request
+    let success_url = successUrlRaw;
+    let cancel_url = cancelUrlRaw;
+    const siteBase = getSiteBase(req);
+    try {
+      // Validate absolute URLs; if invalid, fall back to site base
+      success_url = new URL(successUrlRaw).toString();
+    } catch (_) {
+      success_url = `${siteBase}/success.html?session_id={CHECKOUT_SESSION_ID}`;
+    }
+    try {
+      cancel_url = new URL(cancelUrlRaw).toString();
+    } catch (_) {
+      cancel_url = `${siteBase}/upload`;
+    }
 
     // Validate required fields
     if (!user_id || !job_id || !style_id || !style_name || !success_url || !cancel_url) {
@@ -124,7 +142,15 @@ export default async function handler(req, res) {
       lineItemsIncluded = "base+upscale";
     }
 
-    // Optional customer email
+    // Optional customer email: sanitize and only include if valid by strict regex
+    let customer_email = undefined;
+    if (typeof customerEmailRaw === 'string') {
+      const emailVal = customerEmailRaw.trim();
+      const strictEmail = /^([^\s@]+)@([^\s@]+)\.[^\s@]+$/;
+      if (emailVal && strictEmail.test(emailVal)) {
+        customer_email = emailVal;
+      }
+    }
     if (customer_email) {
       formData.append('customer_email', customer_email);
     }
@@ -140,11 +166,19 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Stripe API error:', errorText);
+      let errorMsg = "Stripe API error";
+      try {
+        const errJson = await response.json();
+        // Stripe error format: { error: { message: "...", param: "...", type: "..." } }
+        errorMsg = (errJson && errJson.error && errJson.error.message) ? errJson.error.message : errorMsg;
+        console.error('Stripe API error:', errJson);
+      } catch (_) {
+        const errorText = await response.text();
+        errorMsg = errorText || errorMsg;
+        console.error('Stripe API error (text):', errorText);
+      }
       return res.status(response.status).json({ 
-        error: "Stripe API error", 
-        details: errorText 
+        error: errorMsg 
       });
     }
 

@@ -34,7 +34,8 @@ export default async function handler(req, res) {
           j.composite_s3_key,
           j.composite_upscaled_url,
           s.title as style_title,
-          s.description as style_description
+          s.description as style_description,
+          s.preview_url as style_preview_url
         FROM pet_portraits.jobs j
         LEFT JOIN pet_portraits.styles s ON s.id::text = j.style_id
         WHERE j.user_id::text = $1
@@ -48,6 +49,7 @@ export default async function handler(req, res) {
       const s3 = canPresign ? new S3Client({ region: process.env.AWS_REGION, credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        sessionToken: process.env.AWS_SESSION_TOKEN,
       } }) : null;
 
       const jobs = await Promise.all(result.rows.map(async row => {
@@ -55,6 +57,7 @@ export default async function handler(req, res) {
         const hasAnyResult = !!(row.result_s3_key || row.composite_s3_key);
         let resultUrl = "";
         let compositeUrl = "";
+        let photoUrl = "";
 
         if (row.result_s3_key) {
           if (s3) {
@@ -81,11 +84,25 @@ export default async function handler(req, res) {
           }
         }
 
+        if (row.upload_s3_key) {
+          if (s3) {
+            try {
+              const cmd = new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: row.upload_s3_key });
+              photoUrl = await getSignedUrl(s3, cmd, { expiresIn: 600 });
+            } catch (e) {
+              photoUrl = `/api/jobs/${row.id}/photo`;
+            }
+          } else {
+            photoUrl = `/api/jobs/${row.id}/photo`;
+          }
+        }
+
         return {
           id: row.id,
           style_id: row.style_id,
           style_title: row.style_title || 'Unknown Style',
           style_description: row.style_description || '',
+          style_preview_url: row.style_preview_url || '',
           status: row.status,
           prompt_text: row.prompt_text || '',
           created_at: row.created_at,
@@ -98,6 +115,7 @@ export default async function handler(req, res) {
           composite_upscaled_url: row.composite_upscaled_url || '',
           has_photo: hasPhoto,
           has_result: hasAnyResult,
+          photo_url: photoUrl,
           result_url: resultUrl,
           composite_url: compositeUrl,
           view_url: compositeUrl || resultUrl

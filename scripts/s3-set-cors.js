@@ -15,11 +15,12 @@ async function main() {
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   }});
 
-  // Allow localhost dev and production domain origins
+  // Allow localhost dev and all production origins (vercel.app and custom domain)
   const origins = [
     "http://localhost:3003",
     "http://localhost:3002",
     "https://www.regalpetportraits.com",
+    "*" // allow any origin for client-side presigned PUTs
   ];
 
   const corsRules = [

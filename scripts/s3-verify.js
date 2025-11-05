@@ -8,15 +8,16 @@ async function main() {
   const bucket = process.env.S3_BUCKET;
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const sessionToken = process.env.AWS_SESSION_TOKEN;
 
   if (!region || !bucket || !accessKeyId || !secretAccessKey) {
-    console.error("Missing AWS env vars. Check AWS_REGION, S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY");
+    console.error("Missing AWS env vars. Check AWS_REGION, S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (and AWS_SESSION_TOKEN if using temporary credentials)");
     process.exit(1);
   }
 
   const s3 = new S3Client({
     region,
-    credentials: { accessKeyId, secretAccessKey },
+    credentials: { accessKeyId, secretAccessKey, sessionToken },
   });
 
   console.log("Verifying S3 bucket access...", { region, bucket });

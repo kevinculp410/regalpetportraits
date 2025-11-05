@@ -12,6 +12,14 @@ export default async function handler(req, res) {
     const userId = getUserIdFromCookie(req);
     if (!userId) return res.json({ logged_in: false, is_admin: false });
 
+    // Dev/local fallback: if no database configured, infer admin from cookie and env
+    if (!process.env.DATABASE_URL) {
+      const adminEmail = process.env.ADMIN_EMAIL || '';
+      const isAdmin = userId === 'dev-admin' && !!adminEmail;
+      if (!isAdmin) return res.json({ logged_in: true, is_admin: false });
+      return res.json({ logged_in: true, is_admin: true, user: { email: adminEmail } });
+    }
+
     const pg = new Client({ connectionString: process.env.DATABASE_URL });
     await pg.connect();
 
@@ -20,7 +28,7 @@ export default async function handler(req, res) {
     await pg.end();
 
     const isAdmin = !!email && email === process.env.ADMIN_EMAIL;
-    return res.json({ logged_in: true, is_admin: isAdmin });
+    return res.json({ logged_in: true, is_admin: isAdmin, user: { email } });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'server_error' });

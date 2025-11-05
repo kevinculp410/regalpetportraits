@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { Client } from "pg";
 import Mailjet from "node-mailjet";
+import { getSiteBase } from "../util/site.js";
 
 export default async function handler(req, res) {
   try {
@@ -46,9 +47,8 @@ export default async function handler(req, res) {
         [token, userId, expiresAt]
       );
 
-      // Build site URL for front-end route; ensure we don't include a trailing '/api'
-      const rawBase = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-      const siteBase = rawBase.replace(/\/api\/?$/, "");
+      // Build site URL for front-end route using forwarded headers/env (never localhost in production)
+      const siteBase = getSiteBase(req);
       const resetLink = `${siteBase}/reset-password?token=${token}`;
 
       // Send reset email via Mailjet (skip in dev if not configured)

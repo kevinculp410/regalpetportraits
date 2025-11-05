@@ -1,10 +1,10 @@
+import { clearAuthCookie } from "../util/cookies.js";
+
 export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-    const isHttps = (process.env.BASE_URL || '').startsWith('https://');
-    // Clear cookie by expiring it immediately
-    const cookie = `uid=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${isHttps ? '; Secure' : ''}`;
-    res.setHeader('Set-Cookie', cookie);
+    // Clear cookie by expiring it immediately (Secure when https)
+    clearAuthCookie(req, res);
     return res.json({ success: true });
   } catch (e) {
     console.error('Signout error:', e);

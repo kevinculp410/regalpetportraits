@@ -46,6 +46,12 @@ export default async function handler(req, res) {
       const salt = randomBytes(16).toString("hex");
       const hash = scryptSync(new_password, salt, 64).toString("hex");
       await pg.query(`UPDATE pet_portraits.users SET password_hash = $1, password_salt = $2 WHERE id = $3`, [hash, salt, t.user_id]);
+      // If this user corresponds to an admin, update admins table too (keep passwords in sync)
+      try {
+        await pg.query(`UPDATE pet_portraits.admins SET password_hash = $1, password_salt = $2, updated_at = NOW() WHERE user_id = $3`, [hash, salt, t.user_id]);
+      } catch (_) {
+        // Ignore if admins table doesn't exist or user isn't an admin
+      }
       await pg.query(`UPDATE pet_portraits.password_reset_tokens SET used = TRUE WHERE token = $1`, [token]);
 
       await pg.end();

@@ -1,4 +1,5 @@
 import { Client } from "pg";
+import { setAuthCookie } from "../../util/cookies.js";
 
 export default async function handler(req, res) {
   try {
@@ -27,10 +28,8 @@ export default async function handler(req, res) {
     // Mark used
     await pg.query(`UPDATE pet_portraits.login_tokens SET used = TRUE WHERE token = $1`, [token]);
 
-    // Set a simple cookie with user_id; only add Secure when using HTTPS
-    const isHttps = (process.env.BASE_URL || '').startsWith('https://');
-    const cookie = `uid=${row.user_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${isHttps ? '; Secure' : ''}`;
-    res.setHeader("Set-Cookie", cookie);
+    // Set a simple cookie with user_id; Secure when https
+    setAuthCookie(req, res, row.user_id);
 
     await pg.end();
     // Redirect to dashboard

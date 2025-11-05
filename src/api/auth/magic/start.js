@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { Client } from "pg";
 import Mailjet from "node-mailjet";
+import { getSiteBase } from "../../util/site.js";
 
 export default async function handler(req, res) {
   try {
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
       [token, userId, expiresAt]
     );
 
-    const link = `${process.env.BASE_URL}/magic?token=${token}`;
+    const link = `${getSiteBase(req)}/magic?token=${token}`;
 
     const mailjet = Mailjet.apiConnect(process.env.MAILJET_API_KEY, process.env.MAILJET_SECRET_KEY);
     await mailjet

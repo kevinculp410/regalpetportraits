@@ -1173,7 +1173,12 @@ const afterRender = {
         if (!res.ok) {
           throw new Error(data.error || 'Create account failed');
         }
-        status.textContent = 'Account created! Please check your email to verify your account.';
+        // Show success and, if available, a direct verification link
+        if (data && data.verification_link) {
+          status.innerHTML = `Account created! Please check your email to verify your account.<br/><a href="${data.verification_link}" class="btn" style="margin-top:8px;">Verify Now</a>`;
+        } else {
+          status.textContent = 'Account created! Please check your email to verify your account.';
+        }
         // Don't redirect - user needs to verify email first
       } catch (err) {
         if (err.message === 'account already exists') {

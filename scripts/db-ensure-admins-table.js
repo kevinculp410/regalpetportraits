@@ -2,14 +2,16 @@ import dotenv from "dotenv";
 dotenv.config();
 import { Client } from "pg";
 import { randomBytes, scryptSync } from "crypto";
+const schema = process.env.DB_SCHEMA || "pet_portraits";
 
 async function ensureAdminsTable() {
   const pg = new Client({ connectionString: process.env.DATABASE_URL });
   await pg.connect();
 
   try {
+    await pg.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
     await pg.query(`
-      CREATE TABLE IF NOT EXISTS admins (
+      CREATE TABLE IF NOT EXISTS ${schema}.admins (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
@@ -21,11 +23,11 @@ async function ensureAdminsTable() {
     `);
 
     // Create index on email for fast lookup
-    await pg.query(`CREATE INDEX IF NOT EXISTS admins_email_idx ON admins (email);`);
+    await pg.query(`CREATE INDEX IF NOT EXISTS admins_email_idx ON ${schema}.admins (email);`);
 
     // Seed admin account if not exists
     const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
-    const existing = await pg.query(`SELECT id FROM admins WHERE email = $1`, [adminEmail]);
+    const existing = await pg.query(`SELECT id FROM ${schema}.admins WHERE email = $1`, [adminEmail]);
     if (!existing.rowCount) {
       const salt = randomBytes(16).toString("hex");
       const password = process.env.ADMIN_SEED_PASSWORD || "TempAdmin_123!"; // share with user
@@ -33,19 +35,19 @@ async function ensureAdminsTable() {
 
       // Ensure a corresponding users row exists for cookie compatibility
       let userId = null;
-      const u = await pg.query(`SELECT id FROM users WHERE email = $1`, [adminEmail]);
+      const u = await pg.query(`SELECT id FROM ${schema}.users WHERE email = $1`, [adminEmail]);
       if (u.rowCount) {
         userId = u.rows[0].id;
       } else {
         const nu = await pg.query(
-          `INSERT INTO users (id, email, name, created_at, updated_at) VALUES (gen_random_uuid(), $1, $2, NOW(), NOW()) RETURNING id`,
+          `INSERT INTO ${schema}.users (id, email, name, created_at, updated_at) VALUES (gen_random_uuid(), $1, $2, NOW(), NOW()) RETURNING id`,
           [adminEmail, "Admin"]
         );
         userId = nu.rows[0].id;
       }
 
       await pg.query(
-        `INSERT INTO admins (email, password_hash, password_salt, user_id) VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO ${schema}.admins (email, password_hash, password_salt, user_id) VALUES ($1, $2, $3, $4)`,
         [adminEmail, hash, salt, userId]
       );
 

@@ -1,6 +1,7 @@
 import { Client } from "pg";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createS3Client } from "../../lib/s3.js";
 import crypto from "crypto";
 
 function getUserIdFromCookie(req) {
@@ -53,13 +54,7 @@ export default async function handler(req, res) {
     if (!s3Key) return res.status(404).json({ error: "result_not_ready" });
 
     // Presign a short-lived URL (e.g., 15 minutes)
-    const s3 = new S3Client({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    });
+    const s3 = await createS3Client();
 
     try {
       const cmd = new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: s3Key });

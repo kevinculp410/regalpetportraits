@@ -1,5 +1,6 @@
 import { Client } from "pg";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { createS3Client } from "../../lib/s3.js";
 
 function getUserIdFromCookie(req) {
   const cookie = req.headers.cookie || "";
@@ -26,13 +27,7 @@ export default async function handler(req, res) {
     const s3Key = r.rows[0].result_s3_key;
     if (!s3Key) return res.status(404).json({ error: "result_not_ready" });
 
-    const s3 = new S3Client({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    });
+    const s3 = await createS3Client();
 
     try {
       const obj = await s3.send(new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: s3Key }));
