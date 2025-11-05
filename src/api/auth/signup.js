@@ -40,12 +40,13 @@ export default async function handler(req, res) {
       );
       const userId = userResult.rows[0].id;
 
-      // Create email verification token
+      // Create email verification token — avoid pgcrypto default by setting id explicitly
       const verificationToken = randomBytes(32).toString("hex");
+      const tokenId = randomUUID();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
       await pg.query(
-        `INSERT INTO pet_portraits.email_verification_tokens (token, user_id, expires_at) VALUES ($1, $2, $3)`,
-        [verificationToken, userId, expiresAt]
+        `INSERT INTO pet_portraits.email_verification_tokens (id, token, user_id, expires_at) VALUES ($1, $2, $3, $4)`,
+        [tokenId, verificationToken, userId, expiresAt]
       );
 
       // Compose verification link from request (works in prod and local)
