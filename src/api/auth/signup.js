@@ -82,31 +82,45 @@ export default async function handler(req, res) {
 
       // Attempt to send verification email; if it fails, proceed and return the link
       try {
-        const mailjet = Mailjet.apiConnect(process.env.MAILJET_API_KEY, process.env.MAILJET_SECRET_KEY);
-        await mailjet
-          .post("send", { version: "v3.1" })
-          .request({
-            Messages: [
-              {
-                From: {
-                  Email: process.env.MAILJET_FROM_EMAIL || "no-reply@emailpetportraits.com",
-                  Name: process.env.MAILJET_FROM_NAME || "Regal Pet Portraits",
+        // Support multiple env var conventions for Mailjet keys
+        const mjPublic = process.env.MAILJET_API_KEY 
+          || process.env.MJ_APIKEY_PUBLIC 
+          || process.env.MAILJET_PUBLIC_KEY;
+        const mjPrivate = process.env.MAILJET_SECRET_KEY 
+          || process.env.MJ_APIKEY_PRIVATE 
+          || process.env.MAILJET_PRIVATE_KEY;
+
+        if (!mjPublic || !mjPrivate) {
+          console.warn("Signup: Mailjet keys missing. Set MAILJET_API_KEY/MAILJET_SECRET_KEY or MJ_APIKEY_PUBLIC/MJ_APIKEY_PRIVATE.");
+        } else {
+          const fromEmail = (process.env.MAILJET_FROM_EMAIL || process.env.ADMIN_EMAIL || "support@regalpetportraits.com").trim();
+          const fromName = (process.env.MAILJET_FROM_NAME || "Regal Pet Portraits").trim();
+          const replyTo = (process.env.MAILJET_REPLY_TO || process.env.ADMIN_EMAIL || fromEmail).trim();
+
+          const mailjet = Mailjet.apiConnect(mjPublic, mjPrivate);
+          await mailjet
+            .post("send", { version: "v3.1" })
+            .request({
+              Messages: [
+                {
+                  From: { Email: fromEmail, Name: fromName },
+                  To: [{ Email: email }],
+                  ReplyTo: { Email: replyTo, Name: fromName },
+                  Subject: "Verify your email - Regal Pet Portraits",
+                  TextPart: `Welcome to Regal Pet Portraits! Please verify your email by clicking: ${verificationLink}`,
+                  HTMLPart: `
+                    <h2>Welcome to Regal Pet Portraits!</h2>
+                    <p>Thank you for creating an account. Please verify your email address to get started.</p>
+                    <p><a href="${verificationLink}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Verify Email</a></p>
+                    <p>Or copy and paste this link: ${verificationLink}</p>
+                    <p>This link will expire in 24 hours.</p>
+                  `,
                 },
-                To: [{ Email: email }],
-                Subject: "Verify your email - Regal Pet Portraits",
-                TextPart: `Welcome to Regal Pet Portraits! Please verify your email by clicking: ${verificationLink}`,
-                HTMLPart: `
-                  <h2>Welcome to Regal Pet Portraits!</h2>
-                  <p>Thank you for creating an account. Please verify your email address to get started.</p>
-                  <p><a href="${verificationLink}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Verify Email</a></p>
-                  <p>Or copy and paste this link: ${verificationLink}</p>
-                  <p>This link will expire in 24 hours.</p>
-                `
-              },
-            ],
-          });
+              ],
+            });
+        }
       } catch (mailErr) {
-        console.error("Signup: failed to send verification email:", mailErr?.message || mailErr);
+        console.error("Signup: failed to send verification email:", mailErr?.ErrorMessage || mailErr?.message || mailErr);
       }
 
       await pg.end();
