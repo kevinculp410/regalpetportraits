@@ -15,6 +15,34 @@ export default async function handler(req, res) {
     await pg.connect();
 
     try {
+      // Ensure required schema and tables exist (no pgcrypto dependency)
+      await pg.query(`CREATE SCHEMA IF NOT EXISTS pet_portraits`);
+      await pg.query(`
+        CREATE TABLE IF NOT EXISTS pet_portraits.users (
+          id UUID PRIMARY KEY,
+          email TEXT UNIQUE NOT NULL,
+          name TEXT,
+          password_hash TEXT,
+          password_salt TEXT,
+          email_verified BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `);
+      await pg.query(`CREATE INDEX IF NOT EXISTS users_email_idx ON pet_portraits.users(email)`);
+      await pg.query(`
+        CREATE TABLE IF NOT EXISTS pet_portraits.email_verification_tokens (
+          id UUID PRIMARY KEY,
+          token TEXT UNIQUE NOT NULL,
+          user_id UUID NOT NULL REFERENCES pet_portraits.users(id) ON DELETE CASCADE,
+          expires_at TIMESTAMPTZ NOT NULL,
+          used BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `);
+      await pg.query(`CREATE INDEX IF NOT EXISTS email_verification_tokens_token_idx ON pet_portraits.email_verification_tokens(token)`);
+      await pg.query(`CREATE INDEX IF NOT EXISTS email_verification_tokens_user_id_idx ON pet_portraits.email_verification_tokens(user_id)`);
+
       // Check if user already exists
       const existing = await pg.query(`SELECT id, email_verified FROM pet_portraits.users WHERE email = $1`, [email]);
       if (existing.rowCount > 0) {
