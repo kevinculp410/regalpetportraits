@@ -45,6 +45,7 @@ app.get("/api/auth/verify-email", async (req, res) => (await import("../src/api/
 app.get("/api/auth/me", async (req, res) => (await import("../src/api/auth/me.js")).default(req, res));
 app.post("/api/auth/forgot-password", async (req, res) => (await import("../src/api/auth/forgot-password.js")).default(req, res));
 app.post("/api/auth/reset-password", async (req, res) => (await import("../src/api/auth/reset-password.js")).default(req, res));
+app.post("/api/auth/admin/forgot-password", async (req, res) => (await import("../src/api/auth/admin/forgot-password.js")).default(req, res));
 app.post("/api/auth/admin/login", async (req, res) => (await import("../src/api/auth/admin/login.js")).default(req, res));
 app.get("/api/admin/me", async (req, res) => (await import("../src/api/admin/me.js")).default(req, res));
 
