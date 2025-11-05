@@ -1,4 +1,6 @@
 import { Client } from "pg";
+import { setAuthCookie } from "../util/cookies.js";
+import { getSiteBase } from "../util/site.js";
 
 export default async function handler(req, res) {
   try {
@@ -40,14 +42,13 @@ export default async function handler(req, res) {
       await pg.query(`UPDATE pet_portraits.users SET email_verified = TRUE, updated_at = NOW() WHERE id = $1`, [tokenRow.user_id]);
 
       // Set authentication cookie
-      const isHttps = (process.env.BASE_URL || '').startsWith('https://');
-      const cookie = `uid=${tokenRow.user_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${isHttps ? '; Secure' : ''}`;
-      res.setHeader("Set-Cookie", cookie);
+      setAuthCookie(req, res, tokenRow.user_id);
 
       await pg.end();
       
-      // Redirect to dashboard with success message
-      return res.redirect(302, `${process.env.BASE_URL}/dashboard?verified=true`);
+      // Redirect to dashboard with success message (compute site base from request)
+      const base = getSiteBase(req);
+      return res.redirect(302, `${base}/dashboard?verified=true`);
       
     } catch (dbError) {
       await pg.end();
