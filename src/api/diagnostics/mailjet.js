@@ -2,12 +2,20 @@ import Mailjet from "node-mailjet";
 
 export default async function handler(req, res) {
   try {
-    const mjPublic = process.env.MAILJET_API_KEY
+    const mjPublicSource = process.env.MAILJET_API_KEY !== undefined ? 'MAILJET_API_KEY'
+      : process.env.MJ_APIKEY_PUBLIC !== undefined ? 'MJ_APIKEY_PUBLIC'
+      : process.env.MAILJET_PUBLIC_KEY !== undefined ? 'MAILJET_PUBLIC_KEY'
+      : null;
+    const mjPrivateSource = process.env.MAILJET_SECRET_KEY !== undefined ? 'MAILJET_SECRET_KEY'
+      : process.env.MJ_APIKEY_PRIVATE !== undefined ? 'MJ_APIKEY_PRIVATE'
+      : process.env.MAILJET_PRIVATE_KEY !== undefined ? 'MAILJET_PRIVATE_KEY'
+      : null;
+    const mjPublic = ((process.env.MAILJET_API_KEY
       || process.env.MJ_APIKEY_PUBLIC
-      || process.env.MAILJET_PUBLIC_KEY;
-    const mjPrivate = process.env.MAILJET_SECRET_KEY
+      || process.env.MAILJET_PUBLIC_KEY) || '').trim();
+    const mjPrivate = ((process.env.MAILJET_SECRET_KEY
       || process.env.MJ_APIKEY_PRIVATE
-      || process.env.MAILJET_PRIVATE_KEY;
+      || process.env.MAILJET_PRIVATE_KEY) || '').trim();
 
     const fromEmail = (process.env.MAILJET_FROM_EMAIL || process.env.ADMIN_EMAIL || "").trim();
     const fromName = (process.env.MAILJET_FROM_NAME || "Regal Pet Portraits").trim();
@@ -21,6 +29,8 @@ export default async function handler(req, res) {
         from_email: fromEmail || null,
         from_name: fromName,
         to_email: toEmail || null,
+        key_source_public: mjPublicSource,
+        key_source_private: mjPrivateSource,
       });
     }
 
@@ -71,6 +81,8 @@ export default async function handler(req, res) {
       to_email: toEmail || null,
       error_auth: authError,
       error_send: sendError,
+      key_source_public: mjPublicSource,
+      key_source_private: mjPrivateSource,
     });
   } catch (e) {
     return res.status(500).json({ error: "mailjet_diag_failed" });

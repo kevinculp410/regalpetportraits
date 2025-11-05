@@ -83,12 +83,16 @@ export default async function handler(req, res) {
       // Attempt to send verification email; if it fails, proceed and return the link
       try {
         // Support multiple env var conventions for Mailjet keys
-        const mjPublic = process.env.MAILJET_API_KEY 
+        const mjPublicRaw = process.env.MAILJET_API_KEY 
           || process.env.MJ_APIKEY_PUBLIC 
           || process.env.MAILJET_PUBLIC_KEY;
-        const mjPrivate = process.env.MAILJET_SECRET_KEY 
+        const mjPrivateRaw = process.env.MAILJET_SECRET_KEY 
           || process.env.MJ_APIKEY_PRIVATE 
           || process.env.MAILJET_PRIVATE_KEY;
+
+        // Trim to avoid leading/trailing spaces causing 401 auth errors
+        const mjPublic = (mjPublicRaw || "").trim();
+        const mjPrivate = (mjPrivateRaw || "").trim();
 
         if (!mjPublic || !mjPrivate) {
           console.warn("Signup: Mailjet keys missing. Set MAILJET_API_KEY/MAILJET_SECRET_KEY or MJ_APIKEY_PUBLIC/MJ_APIKEY_PRIVATE.");
