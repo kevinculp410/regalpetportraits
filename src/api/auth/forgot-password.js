@@ -14,23 +14,24 @@ export default async function handler(req, res) {
     await pg.connect();
 
     try {
+      const schema = process.env.DB_SCHEMA || "pet_portraits";
       // Ensure schema and password_reset_tokens table exists
-      await pg.query(`CREATE SCHEMA IF NOT EXISTS pet_portraits`);
+      await pg.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
       await pg.query(`
-        CREATE TABLE IF NOT EXISTS pet_portraits.password_reset_tokens (
+        CREATE TABLE IF NOT EXISTS ${schema}.password_reset_tokens (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           token TEXT UNIQUE NOT NULL,
-          user_id UUID NOT NULL REFERENCES pet_portraits.users(id) ON DELETE CASCADE,
+          user_id UUID NOT NULL REFERENCES ${schema}.users(id) ON DELETE CASCADE,
           expires_at TIMESTAMPTZ NOT NULL,
           used BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `);
-      await pg.query(`CREATE INDEX IF NOT EXISTS password_reset_tokens_token_idx ON pet_portraits.password_reset_tokens(token)`);
-      await pg.query(`CREATE INDEX IF NOT EXISTS password_reset_tokens_user_id_idx ON pet_portraits.password_reset_tokens(user_id)`);
+      await pg.query(`CREATE INDEX IF NOT EXISTS password_reset_tokens_token_idx ON ${schema}.password_reset_tokens(token)`);
+      await pg.query(`CREATE INDEX IF NOT EXISTS password_reset_tokens_user_id_idx ON ${schema}.password_reset_tokens(user_id)`);
 
       // Look up user quietly (do not leak account existence)
-      const u = await pg.query(`SELECT id, email_verified FROM pet_portraits.users WHERE email = $1 LIMIT 1`, [email]);
+      const u = await pg.query(`SELECT id, email_verified FROM ${schema}.users WHERE email = $1 LIMIT 1`, [email]);
       if (!u.rowCount) {
         await pg.end();
         // Always respond success to prevent email enumeration
@@ -43,7 +44,7 @@ export default async function handler(req, res) {
       const token = randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
       await pg.query(
-        `INSERT INTO pet_portraits.password_reset_tokens (token, user_id, expires_at) VALUES ($1, $2, $3)`,
+        `INSERT INTO ${schema}.password_reset_tokens (token, user_id, expires_at) VALUES ($1, $2, $3)`,
         [token, userId, expiresAt]
       );
 
@@ -51,10 +52,15 @@ export default async function handler(req, res) {
       const siteBase = getSiteBase(req);
       const resetLink = `${siteBase}/reset-password?token=${token}`;
 
-      // Send reset email via Mailjet (skip in dev if not configured)
-      const mjKey = process.env.MAILJET_API_KEY;
-      const mjSecret = process.env.MAILJET_SECRET_KEY;
-      const isProd = process.env.NODE_ENV === "production";
+      // Send reset email via Mailjet with flexible env var support
+      const mjPublicRaw = process.env.MAILJET_API_KEY 
+        || process.env.MJ_APIKEY_PUBLIC 
+        || process.env.MAILJET_PUBLIC_KEY;
+      const mjPrivateRaw = process.env.MAILJET_SECRET_KEY 
+        || process.env.MJ_APIKEY_PRIVATE 
+        || process.env.MAILJET_PRIVATE_KEY;
+      const mjKey = (mjPublicRaw || '').trim();
+      const mjSecret = (mjPrivateRaw || '').trim();
       if (mjKey && mjSecret) {
         const mailjet = Mailjet.apiConnect(mjKey, mjSecret);
         await mailjet
