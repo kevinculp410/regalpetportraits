@@ -10,12 +10,20 @@ export default async function handler(req, res) {
       : process.env.MJ_APIKEY_PRIVATE !== undefined ? 'MJ_APIKEY_PRIVATE'
       : process.env.MAILJET_PRIVATE_KEY !== undefined ? 'MAILJET_PRIVATE_KEY'
       : null;
-    const mjPublic = ((process.env.MAILJET_API_KEY
-      || process.env.MJ_APIKEY_PUBLIC
-      || process.env.MAILJET_PUBLIC_KEY) || '').trim();
-    const mjPrivate = ((process.env.MAILJET_SECRET_KEY
-      || process.env.MJ_APIKEY_PRIVATE
-      || process.env.MAILJET_PRIVATE_KEY) || '').trim();
+    const normalize = (v) => {
+      const t = (v || '').trim();
+      // strip wrapping quotes if present
+      if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+        return t.slice(1, -1).trim();
+      }
+      return t;
+    };
+    const mjPublic = normalize(
+      process.env.MAILJET_API_KEY || process.env.MJ_APIKEY_PUBLIC || process.env.MAILJET_PUBLIC_KEY
+    );
+    const mjPrivate = normalize(
+      process.env.MAILJET_SECRET_KEY || process.env.MJ_APIKEY_PRIVATE || process.env.MAILJET_PRIVATE_KEY
+    );
 
     const fromEmail = (process.env.MAILJET_FROM_EMAIL || process.env.ADMIN_EMAIL || "").trim();
     const fromName = (process.env.MAILJET_FROM_NAME || "Regal Pet Portraits").trim();
@@ -31,6 +39,8 @@ export default async function handler(req, res) {
         to_email: toEmail || null,
         key_source_public: mjPublicSource,
         key_source_private: mjPrivateSource,
+        key_len_public: mjPublic ? mjPublic.length : 0,
+        key_len_private: mjPrivate ? mjPrivate.length : 0,
       });
     }
 
@@ -83,6 +93,8 @@ export default async function handler(req, res) {
       error_send: sendError,
       key_source_public: mjPublicSource,
       key_source_private: mjPrivateSource,
+      key_len_public: mjPublic ? mjPublic.length : 0,
+      key_len_private: mjPrivate ? mjPrivate.length : 0,
     });
   } catch (e) {
     return res.status(500).json({ error: "mailjet_diag_failed" });

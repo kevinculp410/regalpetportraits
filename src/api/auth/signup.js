@@ -91,8 +91,15 @@ export default async function handler(req, res) {
           || process.env.MAILJET_PRIVATE_KEY;
 
         // Trim to avoid leading/trailing spaces causing 401 auth errors
-        const mjPublic = (mjPublicRaw || "").trim();
-        const mjPrivate = (mjPrivateRaw || "").trim();
+        const normalize = (v) => {
+          const t = (v || '').trim();
+          if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+            return t.slice(1, -1).trim();
+          }
+          return t;
+        };
+        const mjPublic = normalize(mjPublicRaw);
+        const mjPrivate = normalize(mjPrivateRaw);
 
         if (!mjPublic || !mjPrivate) {
           console.warn("Signup: Mailjet keys missing. Set MAILJET_API_KEY/MAILJET_SECRET_KEY or MJ_APIKEY_PUBLIC/MJ_APIKEY_PRIVATE.");
