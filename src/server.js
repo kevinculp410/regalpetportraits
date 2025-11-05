@@ -40,6 +40,7 @@ import jobViewRedirectHandler from "./api/jobs/view.js";
 import contactSendHandler from "./api/contact/send.js";
 import forgotPasswordHandler from "./api/auth/forgot-password.js";
 import resetPasswordHandler from "./api/auth/reset-password.js";
+import adminForgotPasswordHandler from "./api/auth/admin/forgot-password.js";
 import stripeWebhookHandler from "./api/stripe/webhook.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -176,6 +177,7 @@ app.post("/api/admin/jobs/:id/unarchive", (req, res) => adminJobUnarchiveHandler
 app.post("/api/uploads/direct", express.raw({ type: '*/*', limit: '25mb' }), (req, res) => directUploadHandler(req, res));
 app.post("/api/contact/send", (req, res) => contactSendHandler(req, res));
 app.post("/api/auth/forgot-password", (req, res) => forgotPasswordHandler(req, res));
+app.post("/api/auth/admin/forgot-password", (req, res) => adminForgotPasswordHandler(req, res));
 app.post("/api/auth/reset-password", (req, res) => resetPasswordHandler(req, res));
 // Stripe webhook requires raw body for signature verification
 app.post("/api/stripe/webhook", express.raw({ type: 'application/json' }), (req, res) => stripeWebhookHandler(req, res));

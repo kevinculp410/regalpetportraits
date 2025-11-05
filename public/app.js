@@ -683,7 +683,7 @@ const afterRender = {
       status.style.color = '#3730a3';
       const email = (emailInput?.value || '').trim();
       try {
-        const res = await fetch('/api/auth/forgot-password', {
+        const res = await fetch('/api/auth/admin/forgot-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
