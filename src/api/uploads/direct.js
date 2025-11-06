@@ -15,15 +15,28 @@ export default async function handler(req, res) {
 
     // Expect headers: x-job-id, x-filename; and raw binary body
     const jobId = req.headers["x-job-id"]; // should be uuid
-    const filename = req.headers["x-filename"]; // original filename
+    const rawFilename = req.headers["x-filename"]; // original filename
     const contentType = req.headers["content-type"] || "application/octet-stream";
 
-    if (!jobId || !filename) {
+    if (!jobId || !rawFilename) {
       return res.status(400).json({ error: "x-job-id and x-filename headers required" });
     }
     if (!Buffer.isBuffer(req.body)) {
       return res.status(400).json({ error: "raw binary body required" });
     }
+
+    // Sanitize filename to avoid path traversal and invalid characters
+    const sanitizeFilename = (name) => {
+      // strip any path components
+      const base = String(name || '').split(/[\\/]+/).pop();
+      // trim and collapse spaces
+      const trimmed = base.trim().replace(/\s+/g, '-');
+      // allow letters, numbers, dash, underscore, dot; replace others with '-' 
+      const safe = trimmed.replace(/[^A-Za-z0-9._-]/g, '-');
+      // prevent empty filenames
+      return safe || 'upload.jpg';
+    };
+    const filename = sanitizeFilename(rawFilename);
 
     const key = `uploads/${userId}/${jobId}/${filename}`;
 
