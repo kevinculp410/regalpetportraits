@@ -1421,11 +1421,16 @@ const afterRender = {
           const r = await fetch(`${window.API_BASE_URL}/api/styles`, { credentials: 'include' });
           const d = await r.json();
           if (!r.ok) throw new Error(d.error || 'load_failed');
-          // Sort styles alphabetically by title (case-insensitive)
+          // Sort styles by numeric order from filename/title (e.g., style-m-1, style-m-2)
           const items = (d.data || []).slice().sort((a, b) => {
-            const ta = String(a.title || '').trim();
-            const tb = String(b.title || '').trim();
-            return ta.localeCompare(tb, undefined, { sensitivity: 'base' });
+            const af = String(a.original_filename || a.title || '').trim();
+            const bf = String(b.original_filename || b.title || '').trim();
+            const am = af.match(/(\d+)/);
+            const bm = bf.match(/(\d+)/);
+            const an = am ? parseInt(am[1], 10) : Number.POSITIVE_INFINITY;
+            const bn = bm ? parseInt(bm[1], 10) : Number.POSITIVE_INFINITY;
+            if (an !== bn) return an - bn;
+            return af.localeCompare(bf, undefined, { numeric: true, sensitivity: 'base' });
           });
           const rows = [];
           for (let i = 0; i < items.length; i += 5) {
