@@ -25,7 +25,7 @@ app.use(async (req, res, next) => {
     const uid = cookieMap.uid || null;
     if (!uid || !process.env.DATABASE_URL) return next();
 
-    const thresholdMs = Number(process.env.IDLE_TIMEOUT_MS || 600000); // default 10 minutes
+    const thresholdMs = Number(process.env.IDLE_TIMEOUT_MS || 1200000); // default 20 minutes
     const schema = process.env.DB_SCHEMA || "pet_portraits";
     const now = new Date();
 
