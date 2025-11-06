@@ -957,14 +957,57 @@ const afterRender = {
             body: JSON.stringify({ job_id: jobId, filename: file.name, contentType: file.type || 'application/octet-stream' })
           });
           const presignCt = presignRes.headers.get('content-type') || '';
-          if (!presignCt.includes('application/json')) {
-            throw new Error(`server_response_not_json_${presignRes.status}`);
+          let presign = null;
+          if (presignCt.includes('application/json')) {
+            try { presign = await presignRes.json(); } catch (_) {}
           }
-          const presign = await presignRes.json();
-          if (!presignRes.ok || !presign.url) {
-            status.style.backgroundColor = '#fee2e2';
-            status.style.color = '#dc2626';
-            status.textContent = `Upload prep failed: ${presign.error || presignRes.status}`;
+          if (!presignRes.ok || !presign || !presign.url) {
+            // Fallback immediately to direct upload if presign fails or is blocked
+            status.textContent = 'Upload prep failed; using server upload...';
+            const buf = await file.arrayBuffer();
+            const directRes = await fetch('/api/uploads/direct', {
+              method: 'POST',
+              headers: {
+                'Content-Type': file.type || 'application/octet-stream',
+                'x-job-id': jobId,
+                'x-filename': file.name
+              },
+              credentials: 'include',
+              body: buf
+            });
+            const directCt = directRes.headers.get('content-type') || '';
+            if (!directCt.includes('application/json')) {
+              throw new Error(`server_response_not_json_${directRes.status}`);
+            }
+            const direct = await directRes.json();
+            if (!directRes.ok || !direct.ok) {
+              status.style.backgroundColor = '#fee2e2';
+              status.style.color = '#dc2626';
+              status.textContent = `Upload failed (server): ${direct.error || directRes.status}`;
+              return;
+            }
+            const uploadedS3Key = direct.s3_key;
+            sessionStorage.setItem('petS3Key', uploadedS3Key);
+            if (uploadedS3Key) {
+              const parts = uploadedS3Key.split('/');
+              const userIdFromKey = parts[1];
+              const jobIdFromKey = parts[2];
+              const filename = parts.slice(3).join('/');
+              if (userIdFromKey && jobIdFromKey && filename) {
+                sessionStorage.setItem('petFile', `uploads/${userIdFromKey}/${jobIdFromKey}/${filename}`);
+              }
+            }
+            try {
+              await fetch(`/api/jobs/${jobId}/photo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ s3_key: uploadedS3Key })
+              });
+            } catch (_) {}
+            status.textContent = 'Upload complete! You can continue to checkout.';
+            status.style.backgroundColor = '#dcfce7';
+            status.style.color = '#16a34a';
             return;
           }
 

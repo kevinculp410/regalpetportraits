@@ -1,6 +1,5 @@
 import { Client } from "pg";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createS3Client } from "../../lib/s3.js";
 
 export default async function handler(req, res) {
@@ -25,12 +24,20 @@ export default async function handler(req, res) {
     const s3 = await createS3Client(regionHint);
 
     try {
-      const cmd = new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: s3Key });
-      const url = await getSignedUrl(s3, cmd, { expiresIn: 60 * 15 });
-      return res.redirect(302, url);
+      const obj = await s3.send(new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: s3Key }));
+      const ct = obj.ContentType || "image/jpeg";
+      res.setHeader("Content-Type", ct);
+      // Favor existing CacheControl, otherwise set a reasonable default
+      if (obj.CacheControl) {
+        res.setHeader("Cache-Control", obj.CacheControl);
+      } else {
+        res.setHeader("Cache-Control", "public, max-age=31536000");
+      }
+      // Stream bytes directly to client to avoid cross-origin redirects (ORB/CORB)
+      obj.Body.pipe(res);
     } catch (err) {
       const meta = err?.$metadata || {};
-      console.error("S3 presign failed:", err?.name, err?.message, meta.httpStatusCode);
+      console.error("S3 get failed:", err?.name, err?.message, meta.httpStatusCode);
       return res.status(500).json({ error: "s3_get_failed" });
     }
   } catch (e) {
