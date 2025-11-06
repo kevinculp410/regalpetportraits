@@ -803,9 +803,15 @@ const afterRender = {
     const img = document.getElementById('previewImg');
     const status = document.getElementById('uploadStatus');
     if (!input) return;
-    input.addEventListener('change', async () => {
+  input.addEventListener('change', async () => {
       const file = input.files?.[0];
       if (!file) return;
+
+      // Clear any previous upload session data so subsequent uploads don't reuse stale values
+      try {
+        sessionStorage.removeItem('petFile');
+        sessionStorage.removeItem('petS3Key');
+      } catch (_) {}
 
       // Validate file type and size (JPG/JPEG/PNG under 5MB)
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
