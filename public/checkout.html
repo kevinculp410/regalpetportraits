@@ -306,43 +306,14 @@
           </div>
         </div>
 
-        <div class="form-section">
-          <h3>Test Data (Auto-filled)</h3>
-          <div class="form-group">
-            <label for="userId">User ID</label>
-            <input type="text" id="userId" name="userId" value="test-user-123" readonly />
-          </div>
-          <div class="form-group">
-            <label for="jobId">Job ID</label>
-            <input type="text" id="jobId" name="jobId" value="test-job-456" readonly />
-          </div>
-          <div class="form-group">
-            <label for="styleId">Style ID</label>
-            <input type="text" id="styleId" name="styleId" value="test-style-789" readonly />
-          </div>
-          <div class="form-group">
-            <label for="styleName">Style Name</label>
-            <input type="text" id="styleName" name="styleName" value="test-style.png" readonly />
-          </div>
-          <div class="form-group">
-            <label for="petFile">Pet File</label>
-            <input type="text" id="petFile" name="petFile" value="" readonly />
-          </div>
-        </div>
+        <!-- Hidden fields for production (populated by JS) -->
+        <input type="hidden" id="userId" name="userId" />
+        <input type="hidden" id="jobId" name="jobId" />
+        <input type="hidden" id="styleId" name="styleId" />
+        <input type="hidden" id="styleName" name="styleName" />
+        <input type="hidden" id="petFile" name="petFile" />
 
-        <div class="form-section">
-          <h3>🧪 Test Displays</h3>
-          <div class="form-group">
-            <label for="petFileDisplay">Pet File Value Being Passed to Stripe</label>
-            <input type="text" id="petFileDisplay" name="petFileDisplay" value="" readonly style="background-color: #f0f8ff; border: 2px solid #4CAF50; font-weight: bold;" />
-            <small style="color: #666; margin-top: 4px; display: block;">Format: uuid/job_id/filename</small>
-          </div>
-          <div class="form-group">
-            <label for="wantUpscale">want_upscale (true/false)</label>
-            <input type="text" id="wantUpscale" name="want_upscale" value="false" readonly style="background-color: #fff7ed; border: 2px solid #f59e0b; font-weight: bold;" />
-            <small style="color: #666; margin-top: 4px; display: block;">Reflects your package selection above.</small>
-          </div>
-        </div>
+        <!-- Removed test display section for production -->
 
         <div class="total-section">
           <div class="total-row">
