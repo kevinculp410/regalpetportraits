@@ -802,6 +802,7 @@ const afterRender = {
     const preview = document.getElementById('preview');
     const img = document.getElementById('previewImg');
     const status = document.getElementById('uploadStatus');
+    const continueBtn = document.getElementById('continueBtn');
     if (!input) return;
   input.addEventListener('change', async () => {
       const file = input.files?.[0];
@@ -811,7 +812,11 @@ const afterRender = {
       try {
         sessionStorage.removeItem('petFile');
         sessionStorage.removeItem('petS3Key');
+        sessionStorage.removeItem('jobId');
       } catch (_) {}
+
+      // Hide checkout button until upload completes
+      if (continueBtn) continueBtn.style.display = 'none';
 
       // Validate file type and size (JPG/JPEG/PNG under 5MB)
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
@@ -954,6 +959,7 @@ const afterRender = {
           status.textContent = 'Upload complete! You can continue to checkout.';
           status.style.backgroundColor = '#dcfce7';
           status.style.color = '#16a34a';
+          if (continueBtn) continueBtn.style.display = 'inline-block';
         } else {
           // 2) Presign upload
           status.textContent = 'Preparing upload...';
@@ -1014,6 +1020,7 @@ const afterRender = {
             status.textContent = 'Upload complete! You can continue to checkout.';
             status.style.backgroundColor = '#dcfce7';
             status.style.color = '#16a34a';
+            if (continueBtn) continueBtn.style.display = 'inline-block';
             return;
           }
 
@@ -1075,6 +1082,7 @@ const afterRender = {
           status.textContent = 'Upload complete! You can continue to checkout.';
           status.style.backgroundColor = '#dcfce7';
           status.style.color = '#16a34a';
+          if (continueBtn) continueBtn.style.display = 'inline-block';
         }
       } catch (err) {
         status.textContent = `Upload failed: ${err.message || 'unknown_error'}`;
