@@ -110,6 +110,10 @@ app.get("/api/admin/me", async (req, res) => (await import("../src/api/admin/me.
 // Styles
 app.get("/api/styles", async (req, res) => (await import("../src/api/styles/list.js")).default(req, res));
 app.get("/api/styles/:id/preview", async (req, res) => (await import("../src/api/styles/preview.js")).default(req, res));
+// Missing in production: support style creation and deletion
+app.post("/api/styles", async (req, res) => (await import("../src/api/styles/create.js")).default(req, res));
+app.delete("/api/styles/:id", async (req, res) => (await import("../src/api/styles/delete.js")).default(req, res));
+app.post("/api/styles/delete-all", async (req, res) => (await import("../src/api/styles/delete_all.js")).default(req, res));
 
 // Admin
 app.get("/api/admin/users", async (req, res) => (await import("../src/api/admin/users/list.js")).default(req, res));
