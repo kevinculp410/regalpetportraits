@@ -710,7 +710,18 @@ const afterRender = {
       const data = await response.json();
       
       if (data.data && data.data.length > 0) {
-        grid.innerHTML = data.data.map(item => `
+        // Sort by numeric suffix in original filename/title (ascending): style-m-1, style-m-2, ...
+        const items = data.data.slice().sort((a, b) => {
+          const af = String(a.original_filename || a.title || '').trim();
+          const bf = String(b.original_filename || b.title || '').trim();
+          const am = af.match(/(\d+)/);
+          const bm = bf.match(/(\d+)/);
+          const an = am ? parseInt(am[1], 10) : Number.POSITIVE_INFINITY;
+          const bn = bm ? parseInt(bm[1], 10) : Number.POSITIVE_INFINITY;
+          if (an !== bn) return an - bn;
+          return af.localeCompare(bf, undefined, { numeric: true, sensitivity: 'base' });
+        });
+        grid.innerHTML = items.map(item => `
           <div class="card">
             <img src="${window.API_BASE_URL}/api/styles/${item.id}/preview" alt="${item.title}" />
             <div class="body">
