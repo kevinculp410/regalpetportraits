@@ -18,5 +18,6 @@
     window.API_BASE_URL = '';
   }
 })();
-
-window.USE_LOCAL_UPLOADS = false;
+// Force direct uploads in production to bypass browser S3 CORS/ORB issues
+// The server streams to S3, avoiding client-side presigned PUTs
+window.USE_LOCAL_UPLOADS = (window.location.hostname === 'localhost') ? false : true;
