@@ -1400,6 +1400,15 @@ const afterRender = {
             const url = URL.createObjectURL(f);
             previewImg.src = url;
             previewWrap.style.display = 'block';
+
+            // Auto-fill style title from selected file name, without extension (e.g., .png)
+            const titleInput = document.getElementById('styleTitle');
+            if (titleInput) {
+              const rawName = String(f.name || '').trim();
+              // Remove common image extensions; .png specifically requested, include others for robustness
+              const nameWithoutExt = rawName.replace(/\.(png|jpg|jpeg|gif|webp)$/i, '');
+              titleInput.value = nameWithoutExt || rawName;
+            }
           } else {
             previewWrap.style.display = 'none';
             previewImg.src = '';
