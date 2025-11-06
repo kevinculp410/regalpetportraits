@@ -28,9 +28,10 @@ export default async function handler(req, res) {
 
     const pg = new Client({ connectionString: process.env.DATABASE_URL });
     await pg.connect();
+    const schema = process.env.DB_SCHEMA || 'pet_portraits';
 
     // Primary: try admin table
-    const a = await pg.query(`SELECT id, email, password_hash, password_salt, user_id FROM pet_portraits.admins WHERE email = $1`, [email]);
+    const a = await pg.query(`SELECT id, email, password_hash, password_salt, user_id FROM ${schema}.admins WHERE email = $1`, [email]);
     let userId = null;
     if (a.rowCount) {
       const admin = a.rows[0];
@@ -40,22 +41,22 @@ export default async function handler(req, res) {
       // ensure a corresponding users row exists
       userId = admin.user_id;
       if (!userId) {
-        const u = await pg.query(`SELECT id FROM pet_portraits.users WHERE email = $1`, [email]);
+        const u = await pg.query(`SELECT id FROM ${schema}.users WHERE email = $1`, [email]);
         if (u.rowCount) {
           userId = u.rows[0].id;
         } else {
           const nu = await pg.query(
-            `INSERT INTO pet_portraits.users (id, email, name, created_at, updated_at) VALUES (gen_random_uuid(), $1, $2, NOW(), NOW()) RETURNING id`,
+            `INSERT INTO ${schema}.users (id, email, name, created_at, updated_at) VALUES (gen_random_uuid(), $1, $2, NOW(), NOW()) RETURNING id`,
             [email, 'Admin']
           );
           userId = nu.rows[0].id;
         }
-        await pg.query(`UPDATE pet_portraits.admins SET user_id = $1, updated_at = NOW() WHERE id = $2`, [userId, admin.id]);
+        await pg.query(`UPDATE ${schema}.admins SET user_id = $1, updated_at = NOW() WHERE id = $2`, [userId, admin.id]);
       }
     } else {
       // Fallback: allow admin to sign in using users table if email matches and ADMIN_EMAIL is set
       const u = await pg.query(
-        `SELECT id, email, password_hash, password_salt, email_verified FROM pet_portraits.users WHERE email = $1`,
+        `SELECT id, email, password_hash, password_salt, email_verified FROM ${schema}.users WHERE email = $1`,
         [email]
       );
       if (!u.rowCount) { await pg.end(); return res.status(401).json({ error: 'invalid_credentials' }); }

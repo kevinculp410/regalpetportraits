@@ -22,20 +22,29 @@ export default async function handler(req, res) {
 
     const pg = new Client({ connectionString: process.env.DATABASE_URL });
     await pg.connect();
-    // Prefer admins table membership; fallback to configured ADMIN_EMAIL
+    const schema = process.env.DB_SCHEMA || 'pet_portraits';
+    // Prefer admins table membership; fallback to admins by email, then configured ADMIN_EMAIL
     let isAdmin = false;
     let email = null;
     try {
-      const a = await pg.query(`SELECT 1 FROM pet_portraits.admins WHERE user_id = $1`, [userId]);
+      const a = await pg.query(`SELECT 1 FROM ${schema}.admins WHERE user_id = $1`, [userId]);
       if (a.rowCount) {
-        const u = await pg.query(`SELECT email FROM pet_portraits.users WHERE id = $1`, [userId]);
+        const u = await pg.query(`SELECT email FROM ${schema}.users WHERE id = $1`, [userId]);
         email = u.rows[0]?.email || null;
         isAdmin = true;
       } else {
-        const u = await pg.query(`SELECT email FROM pet_portraits.users WHERE id = $1`, [userId]);
+        const u = await pg.query(`SELECT email FROM ${schema}.users WHERE id = $1`, [userId]);
         email = u.rows[0]?.email || null;
-        const configuredAdminEmail = process.env.ADMIN_EMAIL || '';
-        isAdmin = !!email && !!configuredAdminEmail && email === configuredAdminEmail;
+        // Robust fallback: if the email exists in admins table, treat as admin
+        if (email) {
+          const ae = await pg.query(`SELECT 1 FROM ${schema}.admins WHERE email = $1`, [email]);
+          if (ae.rowCount) isAdmin = true;
+        }
+        // Secondary fallback: configured ADMIN_EMAIL
+        if (!isAdmin) {
+          const configuredAdminEmail = process.env.ADMIN_EMAIL || '';
+          isAdmin = !!email && !!configuredAdminEmail && email === configuredAdminEmail;
+        }
       }
     } finally {
       await pg.end();
