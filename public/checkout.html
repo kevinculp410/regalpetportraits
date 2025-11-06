@@ -362,6 +362,27 @@
         let jobId = sessionStorage.getItem('jobId') || '';
         let petFile = sessionStorage.getItem('petFile') || '';
 
+        // Fallback: construct pet_file from session petS3Key if available
+        if (!petFile) {
+          const s3Key = sessionStorage.getItem('petS3Key') || '';
+          if (s3Key) {
+            const parts = s3Key.split('/');
+            const userIdFromKey = parts[1];
+            const jobIdFromKey = parts[2];
+            const filename = parts.slice(3).join('/');
+            if (userIdFromKey && jobIdFromKey && filename) {
+              petFile = `uploads/${userIdFromKey}/${jobIdFromKey}/${filename}`;
+              // Also sync jobId from key if missing
+              if (!jobId && jobIdFromKey) {
+                jobId = jobIdFromKey;
+                sessionStorage.setItem('jobId', jobId);
+              }
+              sessionStorage.setItem('petFile', petFile);
+              console.log('Built pet_file from petS3Key:', petFile);
+            }
+          }
+        }
+
         // Pull latest job and extract pet_file (requires auth cookie)
         try {
           const resp = await fetch(`${apiBase}/api/jobs`, { credentials: 'include' });
