@@ -1460,6 +1460,8 @@ const afterRender = {
           listEl.innerHTML = tableHtml;
           listEl.querySelectorAll('.delete-style').forEach(btn => {
             btn.addEventListener('click', async () => {
+              const confirmDelete = window.confirm('Are you sure you want to delete this style?');
+              if (!confirmDelete) return;
               const id = btn.getAttribute('data-id');
               try {
                 const del = await fetch(`${window.API_BASE_URL}/api/styles/${id}`, { method: 'DELETE', credentials: 'include' });
