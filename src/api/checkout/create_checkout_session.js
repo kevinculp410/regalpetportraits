@@ -77,6 +77,11 @@ export default async function handler(req, res) {
       }
     }
 
+    // Enforce presence of pet_file after fallback: do not create a Stripe session without it
+    if (!pet_file) {
+      return res.status(400).json({ error: "pet_file_required" });
+    }
+
     // Get Stripe secret key from environment
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
