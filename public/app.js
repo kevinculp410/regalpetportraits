@@ -1421,7 +1421,12 @@ const afterRender = {
           const r = await fetch(`${window.API_BASE_URL}/api/styles`, { credentials: 'include' });
           const d = await r.json();
           if (!r.ok) throw new Error(d.error || 'load_failed');
-          const items = d.data || [];
+          // Sort styles alphabetically by title (case-insensitive)
+          const items = (d.data || []).slice().sort((a, b) => {
+            const ta = String(a.title || '').trim();
+            const tb = String(b.title || '').trim();
+            return ta.localeCompare(tb, undefined, { sensitivity: 'base' });
+          });
           const rows = [];
           for (let i = 0; i < items.length; i += 5) {
             rows.push(items.slice(i, i + 5));
