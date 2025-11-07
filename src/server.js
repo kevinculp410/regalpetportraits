@@ -42,6 +42,7 @@ import forgotPasswordHandler from "./api/auth/forgot-password.js";
 import resetPasswordHandler from "./api/auth/reset-password.js";
 import adminForgotPasswordHandler from "./api/auth/admin/forgot-password.js";
 import stripeWebhookHandler from "./api/stripe/webhook.js";
+import stripeDiagnosticsHandler from "./api/diagnostics/stripe.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,7 +112,10 @@ app.get("/env.js", (req, res) => {
   const inferredOrigin = `${req.protocol}://${req.get('host')}`;
   const base = (isProd ? (process.env.API_BASE_URL || inferredOrigin) : inferredOrigin);
   const flag = (process.env.USE_LOCAL_UPLOADS === 'true');
-  res.type("application/javascript").send(`window.API_BASE_URL = "${base}"; window.USE_LOCAL_UPLOADS = ${flag};`);
+  const paymentLink = process.env.PAYMENT_LINK_URL || '';
+  res.type("application/javascript").send(
+    `window.API_BASE_URL = "${base}"; window.USE_LOCAL_UPLOADS = ${flag}; window.PAYMENT_LINK_URL = ${JSON.stringify(paymentLink)};`
+  );
 });
 
 // serve static assets
@@ -181,6 +185,8 @@ app.post("/api/auth/admin/forgot-password", (req, res) => adminForgotPasswordHan
 app.post("/api/auth/reset-password", (req, res) => resetPasswordHandler(req, res));
 // Stripe webhook requires raw body for signature verification
 app.post("/api/stripe/webhook", express.raw({ type: 'application/json' }), (req, res) => stripeWebhookHandler(req, res));
+// Diagnostics: Stripe env presence and mode (no secrets)
+app.get("/api/diagnostics/stripe", (req, res) => stripeDiagnosticsHandler(req, res));
 // front-end env script moved above static
 
 // Simple ping to validate /api routing
