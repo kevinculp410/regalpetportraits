@@ -710,17 +710,38 @@ const afterRender = {
       const data = await response.json();
       
       if (data.data && data.data.length > 0) {
-        // Sort by numeric suffix in original filename/title (ascending): style-m-1, style-m-2, ...
-        const items = data.data.slice().sort((a, b) => {
-          const af = String(a.original_filename || a.title || '').trim();
-          const bf = String(b.original_filename || b.title || '').trim();
-          const am = af.match(/(\d+)/);
-          const bm = bf.match(/(\d+)/);
-          const an = am ? parseInt(am[1], 10) : Number.POSITIVE_INFINITY;
-          const bn = bm ? parseInt(bm[1], 10) : Number.POSITIVE_INFINITY;
-          if (an !== bn) return an - bn;
-          return af.localeCompare(bf, undefined, { numeric: true, sensitivity: 'base' });
+        // Group and order styles for display:
+        // 1) All styles matching "Style-M-x" sorted by x ascending
+        // 2) Then styles matching "Z-Style-F-x" sorted by x ascending
+        // 3) Then any remaining styles (alphabetical)
+        const itemsRaw = data.data.slice();
+        const readName = (it) => String(it.original_filename || it.title || '').trim();
+        const extractNum = (str, re) => {
+          const m = str.match(re);
+          return m ? parseInt(m[1], 10) : Number.POSITIVE_INFINITY;
+        };
+        const reM = /\bStyle-M-(\d+)\b/;
+        const reZ = /\bZ-Style-F-(\d+)\b/;
+
+        const groupM = [];
+        const groupZ = [];
+        const others = [];
+        itemsRaw.forEach(it => {
+          const name = readName(it);
+          if (reM.test(name)) {
+            groupM.push(it);
+          } else if (reZ.test(name)) {
+            groupZ.push(it);
+          } else {
+            others.push(it);
+          }
         });
+
+        groupM.sort((a, b) => extractNum(readName(a), reM) - extractNum(readName(b), reM));
+        groupZ.sort((a, b) => extractNum(readName(a), reZ) - extractNum(readName(b), reZ));
+        others.sort((a, b) => readName(a).localeCompare(readName(b), undefined, { numeric: true, sensitivity: 'base' }));
+
+        const items = [...groupM, ...groupZ, ...others];
         grid.innerHTML = items.map(item => `
           <div class="card">
             <img src="${window.API_BASE_URL}/api/styles/${item.id}/preview" alt="${item.title}" />
