@@ -20,6 +20,9 @@ export default async function handler(req, res) {
       base_price_id_present: !!basePriceId,
       upscale_price_id_present: !!upscalePriceId,
       webhook_secret_present: !!webhookSecret,
+      // Non-sensitive echo of current IDs to help confirm configuration
+      base_price_id: basePriceId || null,
+      upscale_price_id: upscalePriceId || null,
     };
 
     return res.json(report);
