@@ -88,9 +88,12 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "STRIPE_SECRET_KEY not configured" });
     }
 
-    // Constants
-    const BASE_PRICE_ID = "price_1SJkV9Clk2skywhOicIr2EWv"; // $9.99 portrait
-    const UPSCALE_PRICE_ID = "price_1SLvyXClk2skywhO9vmSgpXu"; // $4.99 add-on
+    // Price configuration (prefer env; fallback to test IDs if not set)
+    const BASE_PRICE_ID = process.env.BASE_PRICE_ID || "price_1SJkV9Clk2skywhOicIr2EWv";
+    const UPSCALE_PRICE_ID = process.env.UPSCALE_PRICE_ID || "price_1SLvyXClk2skywhO9vmSgpXu";
+    if (!process.env.BASE_PRICE_ID || !process.env.UPSCALE_PRICE_ID) {
+      console.warn("Using fallback test price IDs. Set BASE_PRICE_ID and UPSCALE_PRICE_ID in env for production.");
+    }
 
     // Build form-encoded body
     const formData = new URLSearchParams();
