@@ -120,6 +120,7 @@ export default async function handler(req, res) {
     formData.append('success_url', success_url);
     formData.append('cancel_url', cancel_url);
     formData.append('automatic_tax[enabled]', 'true');
+    formData.append('allow_promotion_codes', 'true');
     formData.append('client_reference_id', job_id);
 
     // Metadata for n8n webhook (Checkout Session)
