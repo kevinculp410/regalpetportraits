@@ -2159,24 +2159,28 @@ const afterRender = {
           } catch (_) {}
         }
         const userId0 = (me0 && me0.user && (me0.user.id || me0.user.user_id)) ? (me0.user.id || me0.user.user_id) : '';
-        const base0 = 'https://buy.stripe.com/test_fZufZg7iCcRI6GO62D00002';
+        const base0 = (typeof window !== 'undefined' && window.PAYMENT_LINK_URL) ? window.PAYMENT_LINK_URL : '';
         const params0 = new URLSearchParams({
           style_id: styleId0,
           job_id: jobId0,
           style_name: styleFilename0 || styleName0,
           user_id: String(userId0 || '')
         });
-        const url0 = `${base0}?${params0.toString()}`;
+        const url0 = base0 ? `${base0}?${params0.toString()}` : '';
         if (linkEl) {
-          linkEl.href = url0;
-          linkEl.textContent = 'Payment Link';
-          linkEl.style.display = 'inline-block';
+          if (url0) {
+            linkEl.href = url0;
+            linkEl.textContent = 'Payment Link';
+            linkEl.style.display = 'inline-block';
+          } else {
+            linkEl.style.display = 'none';
+          }
         }
         if (jobIdEl) {
           jobIdEl.textContent = `job_id: ${jobId0}`;
           jobIdEl.style.display = 'inline';
         }
-        console.log('Stripe Payment Link:', url0);
+        if (url0) console.log('Stripe Payment Link:', url0);
       }
     } catch (_) {}
     btn.addEventListener('click', async (e) => {
@@ -2237,14 +2241,19 @@ const afterRender = {
         }
       }
       const userId = (me && me.user && (me.user.id || me.user.user_id)) ? (me.user.id || me.user.user_id) : '';
-      const base = 'https://buy.stripe.com/test_fZufZg7iCcRI6GO62D00002';
+      const base = (typeof window !== 'undefined' && window.PAYMENT_LINK_URL) ? window.PAYMENT_LINK_URL : '';
       const params = new URLSearchParams({
         style_id: styleId,
         job_id: jobId,
         style_name: styleFilename || styleName,
         user_id: String(userId || '')
       });
-      window.location.href = `${base}?${params.toString()}`;
+      if (base) {
+        window.location.href = `${base}?${params.toString()}`;
+      } else {
+        // Fallback: use standard checkout flow page that creates a Stripe session
+        window.location.href = '/checkout.html';
+      }
     });
   },
   "/dashboard": async () => {

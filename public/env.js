@@ -21,3 +21,7 @@
 // Force direct uploads in production to bypass browser S3 CORS/ORB issues
 // The server streams to S3, avoiding client-side presigned PUTs
 window.USE_LOCAL_UPLOADS = (window.location.hostname === 'localhost') ? false : true;
+
+// Optional: set a Payment Link URL in hosting to bypass API checkout.
+// Default empty ensures we never point to test links.
+window.PAYMENT_LINK_URL = window.PAYMENT_LINK_URL || '';
