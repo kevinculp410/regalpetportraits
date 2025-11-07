@@ -88,11 +88,28 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "STRIPE_SECRET_KEY not configured" });
     }
 
-    // Price configuration (prefer env; fallback to test IDs if not set)
-    const BASE_PRICE_ID = process.env.BASE_PRICE_ID || "price_1SJkV9Clk2skywhOicIr2EWv";
-    const UPSCALE_PRICE_ID = process.env.UPSCALE_PRICE_ID || "price_1SLvyXClk2skywhO9vmSgpXu";
-    if (!process.env.BASE_PRICE_ID || !process.env.UPSCALE_PRICE_ID) {
-      console.warn("Using fallback test price IDs. Set BASE_PRICE_ID and UPSCALE_PRICE_ID in env for production.");
+    // In production, require a live Stripe secret key to avoid test redirects
+    const isProd = process.env.NODE_ENV === 'production';
+    const isLiveKey = String(stripeSecretKey).startsWith('sk_live_');
+    if (isProd && !isLiveKey) {
+      console.warn('Refusing to create test-mode Stripe session in production. Configure STRIPE_SECRET_KEY with a live key.');
+      return res.status(400).json({ error: "stripe_live_required" });
+    }
+
+    // Price configuration:
+    // - In production: require env price IDs (no test fallbacks)
+    // - In non-production: allow test fallbacks for developer convenience
+    let BASE_PRICE_ID = process.env.BASE_PRICE_ID;
+    let UPSCALE_PRICE_ID = process.env.UPSCALE_PRICE_ID;
+    if (!BASE_PRICE_ID || !UPSCALE_PRICE_ID) {
+      if (isProd) {
+        console.warn('Missing BASE_PRICE_ID/UPSCALE_PRICE_ID in production environment.');
+        return res.status(500).json({ error: "price_ids_required" });
+      } else {
+        BASE_PRICE_ID = BASE_PRICE_ID || "price_1SJkV9Clk2skywhOicIr2EWv";
+        UPSCALE_PRICE_ID = UPSCALE_PRICE_ID || "price_1SLvyXClk2skywhO9vmSgpXu";
+        console.warn("Using fallback test price IDs in non-production. Set BASE_PRICE_ID and UPSCALE_PRICE_ID in env for live mode.");
+      }
     }
 
     // Build form-encoded body
