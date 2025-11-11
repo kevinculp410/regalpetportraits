@@ -94,6 +94,12 @@ app.post("/api/contact/send", async (req, res) => {
   return mod.default(req, res);
 });
 
+// Coupon Club
+app.post("/api/coupon-club/join", async (req, res) => {
+  const mod = await import("../src/api/coupon-club/join.js");
+  return mod.default(req, res);
+});
+
 // Auth
 app.post("/api/auth/magic/start", async (req, res) => (await import("../src/api/auth/magic/start.js")).default(req, res));
 app.post("/api/auth/signup", async (req, res) => (await import("../src/api/auth/signup.js")).default(req, res));
