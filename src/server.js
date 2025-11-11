@@ -43,6 +43,7 @@ import resetPasswordHandler from "./api/auth/reset-password.js";
 import adminForgotPasswordHandler from "./api/auth/admin/forgot-password.js";
 import stripeWebhookHandler from "./api/stripe/webhook.js";
 import stripeDiagnosticsHandler from "./api/diagnostics/stripe.js";
+import couponClubJoinHandler from "./api/coupon-club/join.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -180,6 +181,7 @@ app.get("/api/admin/jobs/archive-list", (req, res) => adminJobsArchiveListHandle
 app.post("/api/admin/jobs/:id/unarchive", (req, res) => adminJobUnarchiveHandler(req, res));
 app.post("/api/uploads/direct", express.raw({ type: '*/*', limit: '25mb' }), (req, res) => directUploadHandler(req, res));
 app.post("/api/contact/send", (req, res) => contactSendHandler(req, res));
+app.post("/api/coupon-club/join", (req, res) => couponClubJoinHandler(req, res));
 app.post("/api/auth/forgot-password", (req, res) => forgotPasswordHandler(req, res));
 app.post("/api/auth/admin/forgot-password", (req, res) => adminForgotPasswordHandler(req, res));
 app.post("/api/auth/reset-password", (req, res) => resetPasswordHandler(req, res));
@@ -217,7 +219,7 @@ app.get("/api/ping", (req, res) => res.json({ ok: true }));
   }
 
 // page routes (SPA): always serve index.html
-app.get(["/", "/signin", "/reset-password", "/styles", "/upload", "/checkout", "/checkout/success", "/dashboard", "/faqs", "/photo-guide", "/contact", "/admin", "/admin/styles", "/admin/users", "/admin/jobs", "/admin/account", "/admin/archive", "/verify-email", "/admin/reset", "/admin/sales"], (req, res) => {
+app.get(["/", "/signin", "/reset-password", "/styles", "/upload", "/coupon-club", "/checkout", "/checkout/success", "/dashboard", "/faqs", "/photo-guide", "/contact", "/admin", "/admin/styles", "/admin/users", "/admin/jobs", "/admin/account", "/admin/archive", "/verify-email", "/admin/reset", "/admin/sales"], (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 

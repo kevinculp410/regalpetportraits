@@ -428,6 +428,24 @@ function ContactPage() {
   `;
 }
 
+function CouponClubPage() {
+  return `
+    <section class="container" style="max-width:680px;">
+      <h1>Join Coupon Club</h1>
+      <p class="muted">Join our coupon club and receive exclusive coupons periodically.</p>
+      <form id="couponClubForm" class="grid">
+        <input id="ccFirst" type="text" placeholder="First name" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <input id="ccLast" type="text" placeholder="Last name" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <input id="ccEmail" type="email" placeholder="you@example.com" required style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;" />
+        <div class="hero-actions">
+          <button class="btn primary" type="submit" id="couponClubSubmitBtn">Join Coupon Club</button>
+        </div>
+      </form>
+      <div id="couponClubStatus" class="pill" style="margin-top:10px; display:none;"></div>
+    </section>
+  `;
+}
+
 function AdminPage() {
   return `
     <section class="container" style="max-width:1000px;">
@@ -656,6 +674,7 @@ const routes = {
   "/admin/reset": AdminResetPage,
   "/styles": StylesPage,
   "/upload": UploadPage,
+  "/coupon-club": CouponClubPage,
   "/checkout": CheckoutPage,
   "/checkout/success": SuccessPage,
   "/dashboard": DashboardPage,
@@ -672,6 +691,48 @@ const routes = {
 };
 
 const afterRender = {
+  "/coupon-club": () => {
+    const form = document.getElementById('couponClubForm');
+    const status = document.getElementById('couponClubStatus');
+    const firstEl = document.getElementById('ccFirst');
+    const lastEl = document.getElementById('ccLast');
+    const emailEl = document.getElementById('ccEmail');
+    const submitBtn = document.getElementById('couponClubSubmitBtn');
+    if (!form) return;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (status) { status.style.display = 'inline-block'; status.textContent = 'Joining...'; status.style.backgroundColor = '#eef2ff'; status.style.color = '#3730a3'; }
+      try {
+        const payload = {
+          first_name: (firstEl?.value || '').trim(),
+          last_name: (lastEl?.value || '').trim(),
+          email: (emailEl?.value || '').trim(),
+        };
+        const resp = await fetch('/api/coupon-club/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json().catch(() => ({ ok: resp.ok }));
+        if (!resp.ok) throw new Error(data.error || 'join_failed');
+        if (status) {
+          status.textContent = 'Thank you for joining! Exclusive coupons are on their way.';
+          status.style.backgroundColor = '#dcfce7';
+          status.style.color = '#16a34a';
+        }
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Joined'; }
+        if (firstEl) firstEl.disabled = true;
+        if (lastEl) lastEl.disabled = true;
+        if (emailEl) emailEl.disabled = true;
+      } catch (err) {
+        if (status) {
+          status.textContent = 'Unable to join. Please try again later.';
+          status.style.backgroundColor = '#fee2e2';
+          status.style.color = '#dc2626';
+        }
+      }
+    });
+  },
   "/admin/reset": () => {
     const form = document.getElementById('adminResetForm');
     const emailInput = document.getElementById('adminResetEmail');
